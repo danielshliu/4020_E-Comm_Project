@@ -39,13 +39,14 @@ router.get('/:itemID', async(req,res) =>{
 });
 
 //Forward Auction Bidding: User must bid higher than current price
-router.get('/bid',async(req,res) =>{
+router.post('/bid',async(req,res) =>{
     const{itemID, amount} = req.body;
     const userID=1; //This will be replaced with the real userID
     
     try{
         await db.query('BEGIN')
         
+        //get active auctions price and forward
         const itemQuery = await db.query(
             'SELECT currentPrice, auctionType FROM "Item" WHERE itemID = $1 AND status = `active`',
             [itemID]
@@ -59,14 +60,65 @@ router.get('/bid',async(req,res) =>{
         
         if(amount <= currentPrice) throw new Error("Bid too low!");
 
+        //new bid to bid table
         await db.query(
-            'UPDATe "Item" '
-        )
+            'UPDATE  INTO "Bid"(itemID, userID, amount) VALUES ($1, $2, $3)', [itemID, userID, amount]
+        );
 
+        //update new price to Item table
+        await db.query(
+            'UPDATE "Item" SET currentPrice = $1 WHERE itemID = $2', [amount, itemID]
+        );
+
+        await db.query('COMMIT');
+        res.json({message: "Bid Accepted!"});
 
     }catch(err){
         await db.query('ROLLBACK');
         res.status(400).json({error: err.message});
+    }
+
+});
+
+
+//Dutch Auction Bidding: Buy instantly at the current price
+router.post('/buy', async(req,res) =>{
+    const {itemID} = req.body;
+    const userID = 1; //temp will be replaced with real userID
+
+    try{
+        await db.query('BEGIN');
+
+        //get active action and dutch type
+        const itemQuery = await db.query(
+            'SELECT currentPrice, auctionType FROM "Item" WHERE itemID = $1 AND status = `active`',
+            [itemID]
+        );
+
+        if(!itemQuery.rows.length) throw new Error("Auction not active");
+
+        const {currentprice, auctiontype} = itemQuery.rows[0];
+
+        if(actiontype !== 'dutch') throw new Error("Not Dutch Auction Type!");
+
+        //update to item sold and who bought it
+        await db.query(
+            'UPDATE "Item" SET status = `sold`, buyerID = $1 WHERE itemID = $2',
+            [buyerID, itemID]
+        );
+
+        //update the DB
+        await db.query('COMMIT');
+
+        res.json({
+            message: "Item Purchased!",
+            price: currentPrice,
+        });
+
+
+    }catch(err){
+        await db.query('ROLLBACK');
+        res.status(400).jsono({error: err.message});
     }
 
 });
