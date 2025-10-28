@@ -46,8 +46,8 @@ exports.forgotPassword = async ({ username, newPassword }) => {
   }
 };
 
-// UC10: Session Validation — stub (expand later if needed)
+// UC10: Session Validation — stub
 exports.validateSession = async (token) => {
-  // You can implement JWT or session logic here later
+
   return { status: 200, data: { valid: true } };
 };
