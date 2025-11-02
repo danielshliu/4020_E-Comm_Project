@@ -16,8 +16,8 @@ const pool = new Pool({
   database: process.env.DB_NAME
 });
 
-const payer_id = 1
-const auction_id = 2
+const payer_id = 1 //temp...
+const auction_id = 2 //temp...
 
 app.post("/pay", async (req, res) => {
     try{

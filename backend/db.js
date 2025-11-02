@@ -17,15 +17,15 @@ dbClient
   .catch((err) => console.error("Connection error:", err.stack));
 
 
- // Example Query 
-dbClient.query("SELECT * FROM users", (err, res)=>{
-    if (!err){
-        console.log(res.rows)
-    } else{
-        console.log(err.message)
-    }
+//  // Example Query 
+// dbClient.query("SELECT * FROM users", (err, res)=>{
+//     if (!err){
+//         console.log(res.rows)
+//     } else{
+//         console.log(err.message)
+//     }
 
-    dbClient.end
-})
+//     dbClient.end
+// })
 
 export default dbClient;

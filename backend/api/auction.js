@@ -8,14 +8,15 @@ router.use(express.json());
 router.get('/', async (req, res) => {
     try {
         const result = await db.query(
-            `SELECT * FROM "Item" WHERE status = 'active' ORDER BY "endTime" ASC`
+            // `SELECT * FROM "items" WHERE status = 'active' ORDER BY "endTime" ASC`
+            `SELECT * FROM "items"`
         );
         res.json(result.rows);
     } catch (err) {
         console.error(err);
-        res.status(500).json("Controlelr API Working");
+        // res.status(500).json("Controlelr API Working"); //Temp checking Controller Facade is working:)
         
-        //res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -33,7 +34,7 @@ router.get('/:itemID', async(req,res) =>{
             [itemID]
         );
 
-        res.json({
+        res.json({  
             item:itemQuery.rows[0],
             bids: bidsQuery.rows
         });
@@ -112,6 +113,9 @@ router.post('/buy', async(req,res) =>{
             'UPDATE "Item" SET status = $1, buyerID = $2 WHERE itemID = $3',
             ['sold',userID, itemID]
         );
+
+        //When the item is not bought
+
 
         //update the DB
         await db.query('COMMIT');
