@@ -31,6 +31,18 @@ app.use('/api/controller', facadeController);
 // the default route//check if working
 app.get('/', (req, res) => res.json({ message: 'Backend running' }));
 
+ // Example Query 
+dbClient.query("SELECT * FROM users", (err, res)=>{
+    if (!err){
+        console.log(res.rows)
+    } else{
+        console.log(err.message)
+    }
+
+    dbClient.end
+})
+
+
 // START THE SERVER MY FRIENDS!!!
 app.listen(PORT, () => {
 	console.log(`Server on port ${PORT}`);
