@@ -1,66 +1,74 @@
-const express = require('express');
+import express from 'express';
+import db from '../db.js';
+
 const router = express.Router();
-const client = require('../db');
+router.use(express.json());
 
 // UC2.2: Get all active items
-router.get('/items', async (req, res) => {
+//Fixed
+router.get('/', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM items WHERE is_active = true');
+    const result = await db.query(`
+        SELECT * FROM items
+      `);
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// UC2.3: Get item by ID
-router.get('/items/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await client.query('SELECT * FROM items WHERE item_id = $1', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Item not found' });
-    res.json(result.rows[0]);
-  } catch (err) {
+    console.log(err)
     res.status(500).json({ error: err.message });
   }
 });
 
 // UC2.1: Search items by keyword
+//Fixed
 router.get('/search', async (req, res) => {
   try {
-    const { keyword } = req.query;
-    const result = await client.query(
-      'SELECT * FROM items WHERE $1 = ANY(keywords) AND is_active = true',
-      [keyword]
+
+    //debugging, the keyword wasnt working but it was a dumb fix...
+     if (!req.query.keyword) {
+            return res.status(400).json({ error: 'Search keyword is required' });
+        }
+    
+    //geet keyword as a String
+    const keyword  = String(req.query.keyword).trim();
+    console.log('Search keyword received:', keyword);
+
+    const result = await db.query(
+     `SELECT 
+        item_id,
+        seller_id,
+        title,
+        description,
+        image_url
+       FROM items 
+       WHERE LOWER(title) LIKE LOWER($1)
+       OR LOWER(description) LIKE LOWER($1)
+       ORDER BY item_id ASC`,
+      [`%${keyword}%`]
     );
+
+     //MORE DEBUGGING I THINK
+    console.log('Parameters:', [`%${keyword}%`]);
+    console.log('Results found:', result.rows.length);
+    console.log('Search results:', result.rows);
+
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+    
+
 
 // UC7: Create new item
-router.post('/items', async (req, res) => {
+//fixed
+router.post('/createItems', async (req, res) => {
   try {
-    const {
-      name, description, category, auction_type, starting_price,
-      reserve_price, shipping_cost_regular, shipping_cost_expedited,
-      estimated_shipping_days, condition, quantity, image_url,
-      keywords, auction_end_time
-    } = req.body;
+    const {seller_id,title,description,image_url} = req.body;
 
-    const result = await client.query(
-      `INSERT INTO items (
-        name, description, category, auction_type, starting_price, current_price,
-        reserve_price, shipping_cost_regular, shipping_cost_expedited,
-        estimated_shipping_days, condition, quantity, image_url, keywords, auction_end_time
-      ) VALUES (
-        $1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
-      ) RETURNING *`,
-      [
-        name, description, category, auction_type, starting_price,
-        reserve_price, shipping_cost_regular, shipping_cost_expedited,
-        estimated_shipping_days, condition, quantity, image_url, keywords, auction_end_time
-      ]
+    const result = await db.query(
+      `INSERT INTO items  (seller_id, title, description, image_url) VALUES 
+      ($1, $2, $3, $4) RETURNING *`,
+      [seller_id, title, description, image_url]
     );
 
     res.status(201).json(result.rows[0]);
@@ -69,22 +77,55 @@ router.post('/items', async (req, res) => {
   }
 });
 
-// UC8: Update Dutch auction price
-router.put('/items/:id/price', async (req, res) => {
+
+// UC2.3: Get item by ID
+router.get('/:item_id', async (req, res) => {
   try {
+    const { item_id } = req.params;
+
+    const result = await db.query('SELECT * FROM items WHERE item_id = $1', [item_id]);
+
+    if (result.rows.length === 0) 
+      return res.status(404).json({ error: 'Item not found' });
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// UC8: Update Dutch auction price
+router.put('/:id/price', async (req, res) => {
+  try {
+
+
+    //not sure why its diff params, but if it cause problems i will fix...
     const { id } = req.params;
     const { new_price } = req.body;
 
-    const result = await client.query(
-      'UPDATE items SET current_price = $1 WHERE item_id = $2 AND auction_type = $3 RETURNING *',
-      [new_price, id, 'dutch']
+    const result = await db.query(
+     `UPDATE auctions 
+       SET current_price = $1 
+       WHERE auction_id = $2 
+       AND winner_id IS NULL
+       RETURNING 
+         auction_id,
+         item_id,
+         current_price,
+         winner_id`,
+      [new_price, id]
     );
 
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Item not found or not a Dutch auction' });
+    if (result.rows.length === 0) 
+      return res.status(404).json({ error: 'Item not found' });
+    
+    console.log('Price updated:', result.rows[0]);
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-module.exports = router;
+export default router;

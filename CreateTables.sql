@@ -13,14 +13,18 @@ CREATE TABLE users (
   username VARCHAR(50) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL
+  reset_token VARCHAR(6),
+  reset_token_expires TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE items (
   item_id SERIAL PRIMARY KEY,
   seller_id INT REFERENCES users(user_id),
-  title VARCHAR(100) NOT NULL,
+  title VARCHAR(100) NOT NULL, description TEXT,
   description VARCHAR(225),
   image_url VARCHAR(225)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE auctions (
@@ -32,6 +36,7 @@ CREATE TABLE auctions (
   current_price INT NOT NULL,
   end_time TIMESTAMP NOT NULL,
   winner_id INT REFERENCES users(user_id)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE forward_auctions (
@@ -59,6 +64,7 @@ CREATE TABLE dutch_accepts (
   auction_id INT REFERENCES dutch_auctions(auction_id),
   buyer_id INT REFERENCES users(user_id),
   accepted_price INT NOT NULL,
+  payment_status VARCHAR(20) DEFAULT 'PENDING',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

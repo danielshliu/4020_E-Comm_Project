@@ -4,131 +4,206 @@ import db from '../db.js';
 const router = express.Router();
 router.use(express.json());
 
-// get all the active auction listings
+// Get all active auction listings
 router.get('/', async (req, res) => {
+
     try {
-        const result = await db.query(
-            // `SELECT * FROM "items" WHERE status = 'active' ORDER BY "endTime" ASC`
-            `SELECT * FROM "items"`
-        );
+        //query all the live active auction in listings
+        const result = await db.query(`
+            SELECT a.*, i.title, i.description, i.image_url 
+            FROM auctions a
+            JOIN items i ON a.item_id = i.item_id
+            WHERE a.winner_id IS NULL
+            ORDER BY a.end_time ASC
+        `);
         res.json(result.rows);
     } catch (err) {
         console.error(err);
-        // res.status(500).json("Controlelr API Working"); //Temp checking Controller Facade is working:)
-        
         res.status(500).json({ error: err.message });
     }
 });
 
-//get the items details
-router.get('/:itemID', async(req,res) =>{
-    const{itemID} = req.params;
-    try{
-        const itemQuery = await db.query(
-            'SELECT * FROM "Item" WHERE itemID = $1', 
-            [itemID]
-        );
+// Get specfic auction details with item info and bids
+router.get('/:auction_id', async(req, res) => {
+    const { auction_id } = req.params;
+    try {
+        // Get auction and item details for the specific
+        const auctionQuery = await db.query(`
+            SELECT a.*, i.title, i.description, i.image_url,
+                   u.username as seller_username
+            FROM auctions a
+            JOIN items i ON a.item_id = i.item_id
+            JOIN users u ON a.seller_id = u.user_id
+            WHERE a.auction_id = $1
+        `, [auction_id]);
 
-        const bidsQuery = await db.query(
-            'SELECT * FROM "Bid" WHERE itemID = $1 ORDER BY amount DESC',
-            [itemID]
-        );
+        // Get bids if it's a forward auction
+        const bidsQuery = await db.query(`
+            SELECT b.*, u.username as bidder_username
+            FROM bids b
+            JOIN users u ON b.bidder_id = u.user_id
+            WHERE b.auction_id = $1
+            ORDER BY b.amount DESC
+        `, [auction_id]);
 
-        res.json({  
-            item:itemQuery.rows[0],
+        res.json({
+            auction: auctionQuery.rows[0],
             bids: bidsQuery.rows
         });
-    }catch(err){
-        res.status(500).json({error: err.message});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
-//Forward Auction Bidding: User must bid higher than current price
-router.post('/bid',async(req,res) =>{
-    const{itemID, amount} = req.body;
-    const userID=1; //This will be replaced with the real userID
+// Forward Auction Bidding
+router.post('/bid', async(req, res) => {
+    const { auction_id, amount } = req.body;
+    const bidder_id = 1; // This will be replaced with the real user_id
     
-    try{
-        await db.query('BEGIN')
+    try {
+        await db.query('BEGIN');
         
-        //get active auctions price and forward
-        const itemQuery = await db.query(
-            'SELECT currentPrice, auctionType FROM "Item" WHERE itemID = $1 AND status = `active`',
-            [itemID]
-        );
+        // Get auction details and lock the row
+        const auctionQuery = await db.query(`
+            SELECT a.*, fa.min_increment
+            FROM auctions a
+            JOIN forward_auctions fa ON a.auction_id = fa.auction_id
+            WHERE a.auction_id = $1 AND a.winner_id IS NULL
+            FOR UPDATE
+        `, [auction_id]);
 
-        if(!itemQuery.row.length) throw new Error("Auction not active");
-
-        const{currentPrice, auctionType} = itemQuery.rows[0];
-
-        if(auctionType !== 'forward') throw new Error("Not Forward Auction Type!");
         
-        if(amount <= currentPrice) throw new Error("Bid too low!");
+        if (!auctionQuery.rows.length) {
+            throw new Error("Auction not found or not active");
+        }
 
-        //new bid to bid table
-        await db.query(
-            'UPDATE  INTO "Bid"(itemID, userID, amount) VALUES ($1, $2, $3)', 
-            [itemID, userID, amount]
-        );
+        const auction = auctionQuery.rows[0];
+        
+        if (auction.auction_type !== 'FORWARD') {
+            throw new Error("Not a forward auction");
+        }
 
-        //update new price to Item table
-        await db.query(
-            'UPDATE "Item" SET currentPrice = $1 WHERE itemID = $2', 
-            [amount, itemID]
-        );
+        const minValidBid = auction.current_price + auction.min_increment;
+        if (amount < minValidBid) {
+            throw new Error(`Bid too low. Minimum bid required: ${minValidBid}`);
+        }
+
+        // Insert a new bid
+        await db.query(`
+            INSERT INTO bids (auction_id, bidder_id, amount)
+            VALUES ($1, $2, $3)
+        `, [auction_id, bidder_id, amount]);
+
+        // Update current price to new price
+        await db.query(`
+            UPDATE auctions 
+            SET current_price = $1
+            WHERE auction_id = $2
+        `, [amount, auction_id]);
 
         await db.query('COMMIT');
-        res.json({message: "Bid Accepted!"});
-
-    }catch(err){
+        res.json({ 
+            message: "Bid accepted!",
+            current_price: amount
+        });
+    } catch (err) {
         await db.query('ROLLBACK');
-        res.status(400).json({error: err.message});
+        res.status(400).json({ error: err.message });
     }
-
 });
 
+// Dutch Auction Accept Price
+router.post('/buy', async(req, res) => {
+    const { auction_id, accept } = req.body;
+    const buyer_id = 1; // This will be replaced with the real user_id
 
-//Dutch Auction Bidding: Buy instantly at the current price
-router.post('/buy', async(req,res) =>{
-    const {itemID} = req.body;
-    const userID = 1; //temp will be replaced with real userID
-
-    try{
+    try {
         await db.query('BEGIN');
 
-        //get active action and dutch type
-        const itemQuery = await db.query(
-            'SELECT "currentPrice", "auctionType" FROM "Item" WHERE itemID = $1 AND status = `active`',
-            [itemID]
-        );
+        //get all the dtuch querys
+        const auctionQuery = await db.query(`
+            SELECT a.*
+            FROM auctions a
+            JOIN dutch_auctions da ON a.auction_id = da.auction_id
+            WHERE a.auction_id = $1 AND a.winner_id IS NULL
+            FOR UPDATE
+        `, [auction_id]);
 
-        if(!itemQuery.rows.length) throw new Error("Auction not active");
+        if (!auctionQuery.rows.length) {
+            throw new Error("Auction not found or not active");
+        }
 
-        const {currentprice, auctionType} = itemQuery.rows[0];
+        const auction = auctionQuery.rows[0];
 
-        if(auctionType !== 'dutch') throw new Error("Not Dutch Auction Type!");
+        if (auction.auction_type !== 'DUTCH') {
+            throw new Error("Not a dutch auction");
+        }
 
-        //update to item sold and who bought it
-        await db.query(
-            'UPDATE "Item" SET status = $1, buyerID = $2 WHERE itemID = $3',
-            ['sold',userID, itemID]
-        );
-
-        //When the item is not bought
+        // Record the acceptance
+        await db.query(`
+            INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price)
+            VALUES ($1, $2, $3)
+        `, [auction_id, buyer_id, auction.current_price]);
 
 
-        //update the DB
-        await db.query('COMMIT');
-        res.json({
-            message: "Item Purchased!",
-            price: currentPrice,
-        });
-    }catch(err){
-        await db.query('ROLLBACK');
-        res.status(400).jsono({error: err.message});
-    }
+        //If the buyer accpets the order and confirms it then, item is purchased
+        if(accept){
+            await db.query(`
+                UPDATE auctions
+                SET winner_id = $1
+                WHERE auction_id = $2
+            `, [buyer_id, auction_id]);
+            
+            await db.query('COMMIT');
+            res.json({
+                message: "Purchase successful!",
+                price: auction.current_price
+            });
+        // If the buyer doesnt accept the order then goes to next buyer.
+        }else{
+            const nextBuyerQ = await db.query(`
+                SELECT da.buyer_id, u.username
+                FROM dutch_accepts da
+                JOIN users u ON da.buyer_id = u.user_id
+                WHERE da.auction_id = $1
+                AND da.accepted_price > $2
+                AND da.buyer_id NOT IN(
+                    SELECT buyer_id
+                    FROM dutch_accepts
+                    WHERE auction_id = $1
+                    AND accepted = false    
+                )
+                ORDER BY da.accepted_price DESC
+                LIMIT 1
+                `, [auction_id, auction.current_price - auction.price_drop_step]);
+        }
+
+        
+        if(nextBuyerQ.row.length > 0){
+            await db.query('COMMIT');
+            res.json({
+                message: "You've opted-out this buy. Next Buyer Notified",
+                next_buyer: nextBuyerQ.rows[0].username,
+                current_price: auction.current_price
+            });
+        }else{
+            await db.query(`
+                UPDATE auctions
+                SET current_price = current_price - $1
+                WHERE auction_id = $2
+            `, [auction.price_drop_step, auction_id]);
+            
+            await db.query('COMMIT');
+            res.json({
+                message: "Price has Dropped. Waiting for new buyer",
+                new_price: auction.current_price - auction.price_drop_step
+            })
+        }
     
+    } catch (err) {
+        await db.query('ROLLBACK');
+        res.status(400).json({ error: err.message });
+    }
 });
-
 
 export default router;

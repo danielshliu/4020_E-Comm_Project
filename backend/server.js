@@ -2,6 +2,9 @@ import express from 'express';
 import dotenv from 'dotenv';
 import db from './db.js';
 import auctionAPI from './api/auction.js';
+import catalogueAPI from './api/catalogue.js';
+import paymentAPI from './api/payment.js';
+import userAPI from './api/user.js';
 import facadeController from './api/controller.js';
 
 dotenv.config();
@@ -25,22 +28,26 @@ app.get('/health', async (req, res) => {
 // temp controller API router
 
 app.use('/api/auction', auctionAPI);
+app.use('/api/catalogue', catalogueAPI);
+app.use('/api/user', userAPI);
+
+app.use('/api/payment', paymentAPI);
 
 app.use('/api/controller', facadeController);
 
 // the default route//check if working
 app.get('/', (req, res) => res.json({ message: 'Backend running' }));
 
- // Example Query 
-dbClient.query("SELECT * FROM users", (err, res)=>{
-    if (!err){
-        console.log(res.rows)
-    } else{
-        console.log(err.message)
-    }
+ //Testing
+// db.query("SELECT * FROM users", (err, res)=>{
+//     if (!err){
+//         console.log(res.rows)
+//     } else{
+//         console.log(err.message)
+//     }
 
-    dbClient.end
-})
+//     db.end
+// })
 
 
 // START THE SERVER MY FRIENDS!!!
