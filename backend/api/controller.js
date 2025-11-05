@@ -79,7 +79,7 @@ router.post("/auction/bid", async(req,res) =>{
 
 //catalogue services
 //done
-router.get('/catalouge', async (req, res) => {
+router.get('/catalogue', async (req, res) => {
     try {
         const response = await fetch(`${CATALOGUE_SERVICE_URL}`);
         const data = await response.json();
