@@ -25,12 +25,9 @@ app.get('/health', async (req, res) => {
 	}
 });
 
-// temp controller API router
-
 app.use('/api/auction', auctionAPI);
 app.use('/api/catalogue', catalogueAPI);
 app.use('/api/user', userAPI);
-
 app.use('/api/payment', paymentAPI);
 
 app.use('/api/controller', facadeController);

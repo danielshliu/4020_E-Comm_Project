@@ -37,6 +37,29 @@ router.get("/auction/:auction_id", async(req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+//done
+router.post("/auction/buy", async(req,res)=>{
+    try{
+        const response = await fetch(`${AUCTION_SERVICE_URL}/buy`,{
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(req.body)
+        });
+        
+        const data = await response.json();
+
+        //check if the purchased went through
+        if(!response.ok) throw new Error(data.error || 'Failed to process purchaase');
+    
+        res.json({
+            message: 'Purchase Successfull',
+            transaction: data
+        });
+        
+    }catch(err){
+        res.status(500).json("Auction Purchase Error", {error: err.messsage});
+    }
+});
 
 //done
 router.post("/auction/bid", async(req,res) =>{
@@ -53,27 +76,6 @@ router.post("/auction/bid", async(req,res) =>{
     }
 });
 
-//done
-router.post("/auction/buy", async(req,res)=>{
-    try{
-        const response = await fetch(`${AUCTION_SERVICE_URL}/buy`,{
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(req.body)
-        });
-
-        const data = await response.json();
-        //check if the purchased went through
-        if(!response.ok) throw new Error(data.error || 'Failed to process purchaase');
-    
-        res.json({
-            message: 'Purchase Successfull',
-            transaction: data
-        });
-    }catch(err){
-        res.status(500).json("Auction Purchase Error", {error: err.messsage});
-    }
-});
 
 //catalogue services
 //done

@@ -120,9 +120,9 @@ router.post('/buy', async(req, res) => {
     try {
         await db.query('BEGIN');
 
-        //get all the dtuch querys
+        //get all the dutch querys
         const auctionQuery = await db.query(`
-            SELECT a.*
+            SELECT a.*, da.price_drop_step, da.step_interval_sec
             FROM auctions a
             JOIN dutch_auctions da ON a.auction_id = da.auction_id
             WHERE a.auction_id = $1 AND a.winner_id IS NULL
@@ -141,9 +141,9 @@ router.post('/buy', async(req, res) => {
 
         // Record the acceptance
         await db.query(`
-            INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price)
-            VALUES ($1, $2, $3)
-        `, [auction_id, buyer_id, auction.current_price]);
+            INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price, accepted)
+            VALUES ($1, $2, $3, $4)
+        `, [auction_id, buyer_id, auction.current_price, accept]);
 
 
         //If the buyer accpets the order and confirms it then, item is purchased
@@ -162,7 +162,7 @@ router.post('/buy', async(req, res) => {
         // If the buyer doesnt accept the order then goes to next buyer.
         }else{
             const nextBuyerQ = await db.query(`
-                SELECT da.buyer_id, u.username
+              SELECT da.buyer_id, u.username
                 FROM dutch_accepts da
                 JOIN users u ON da.buyer_id = u.user_id
                 WHERE da.auction_id = $1
@@ -176,28 +176,28 @@ router.post('/buy', async(req, res) => {
                 ORDER BY da.accepted_price DESC
                 LIMIT 1
                 `, [auction_id, auction.current_price - auction.price_drop_step]);
-        }
-
-        
-        if(nextBuyerQ.row.length > 0){
-            await db.query('COMMIT');
-            res.json({
-                message: "You've opted-out this buy. Next Buyer Notified",
-                next_buyer: nextBuyerQ.rows[0].username,
-                current_price: auction.current_price
-            });
-        }else{
-            await db.query(`
-                UPDATE auctions
-                SET current_price = current_price - $1
-                WHERE auction_id = $2
-            `, [auction.price_drop_step, auction_id]);
-            
-            await db.query('COMMIT');
-            res.json({
-                message: "Price has Dropped. Waiting for new buyer",
-                new_price: auction.current_price - auction.price_drop_step
-            })
+                
+                
+                if(nextBuyerQ.rows.length > 0){
+                    await db.query('COMMIT');
+                    res.json({
+                        message: "You've opted-out this buy. Next Buyer Notified",
+                        next_buyer: nextBuyerQ.rows[0].username,
+                        current_price: auction.current_price
+                    });
+                }else{
+                    await db.query(`
+                        UPDATE auctions
+                        SET current_price = current_price - $1
+                        WHERE auction_id = $2
+                        `, [auction.price_drop_step, auction_id]);
+                        
+                        await db.query('COMMIT');
+                        res.json({
+                            message: "Price has Dropped. Waiting for new buyer",
+                            new_price: auction.current_price - auction.price_drop_step
+                        })
+                    }
         }
     
     } catch (err) {

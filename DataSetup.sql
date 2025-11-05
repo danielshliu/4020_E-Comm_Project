@@ -35,8 +35,8 @@ INSERT INTO bids (auction_id, bidder_id, amount) VALUES
 (3, 3, 650);
 
 -- DUTCH_ACCEPTS
-INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price) VALUES
-(2, 3, 450);
+INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price, accepted) VALUES
+(2, 3, 450, true);
 
 -- PAYMENTS
 INSERT INTO payments (auction_id, payer_id, shipping_address) VALUES
