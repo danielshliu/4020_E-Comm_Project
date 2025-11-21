@@ -41,3 +41,16 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+
+
+node_modules/
+**/node_modules/
+ddj-auctions/node_modules/
+.next/

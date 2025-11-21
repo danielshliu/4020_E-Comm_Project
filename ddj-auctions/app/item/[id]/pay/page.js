@@ -1,0 +1,200 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import styles from "./Pay.module.css";
+
+export default function PayPage(props) {
+  // Next.js unwrap
+  const { id } = use(props.params);
+  const auctionId = String(id);
+
+  const router = useRouter();
+  const [auction, setAuction] = useState(null);
+  const [useExpedited, setUseExpedited] = useState(false);
+
+  const [card, setCard] = useState({
+    number: "",
+    name: "",
+    expiry: "",
+    cvv: "",
+  });
+
+  const user = JSON.parse(sessionStorage.getItem("ddj-user") || "{}");
+
+  // ======================================================
+  // database mode
+  // ======================================================
+  /*
+  useEffect(() => {
+    async function loadFromDB() {
+      try {
+        const res = await fetch(`/api/controller/auction/${auctionId}`);
+        const data = await res.json();
+
+        setAuction({
+          id: data.auction.auction_id,
+          name: data.auction.title,
+          currentPrice: Number(data.auction.current_price),
+          shippingPrice: Number(data.auction.shipping_price),
+          expeditedPrice: Number(data.auction.expedited_price),
+          shippingDays: Number(data.auction.shipping_days),
+          winner: data.winner_username,
+        });
+      } catch (err) {
+        console.error("DB Auction Load Error:", err);
+      }
+    }
+    loadFromDB();
+  }, [auctionId]);
+  */
+
+  // ======================================================
+  // local storage mode
+  // ======================================================
+  useEffect(() => {
+    const saved = localStorage.getItem("ddj-items");
+    if (!saved) return;
+
+    const all = JSON.parse(saved);
+    const found = all.find((x) => String(x.id) === auctionId);
+
+    if (found) setAuction(found);
+  }, [auctionId]);
+
+  if (!auction) return <p>Loading...</p>;
+
+  const baseShipping = Number(auction.shippingPrice) || 0;
+  const expedited = Number(auction.expeditedPrice) || 0;
+
+  const total =
+    Number(auction.currentPrice) +
+    baseShipping +
+    (useExpedited ? expedited : 0);
+
+  // ======================================================
+  // database payment mode
+  // ======================================================
+  /*
+  async function payWithDB() {
+    try {
+      const res = await fetch("/api/payment/pay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auction_id: auctionId,
+          payer_id: user.user_id,
+          shipping_address: user.address,
+          expedited: useExpedited ? true : false,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      router.push(`/item/${auctionId}/receipt`);
+    } catch (err) {
+      console.error("DB Payment Error:", err);
+      alert("Payment failed.");
+    }
+  }
+  */
+
+  // ======================================================
+  // local storage payment
+  // ======================================================
+  function payLocal() {
+    // winner check
+    if (!auction.winner && auction.highestBidder !== "You") {
+      alert("You cannot pay for an item you did not win.");
+      return;
+    }
+
+    const receipt = {
+      id: crypto.randomUUID(),
+      auctionId: auction.id,
+      name: auction.name,
+      payer: user.username || "You",
+      totalPaid: total,
+      expedited: useExpedited,
+      shippingAddress: user.address || "123 Default Street",
+      createdAt: Date.now(),
+      shippingDays: auction.shippingDays,
+    };
+
+    // save receipt
+    localStorage.setItem("ddj-receipt", JSON.stringify(receipt));
+
+    // redirect
+    window.location.href = `/item/${auctionId}/receipt`;
+  }
+
+  function handlePayment() {
+    if (!card.number || !card.name || !card.expiry || !card.cvv) {
+      alert("All payment fields must be filled.");
+      return;
+    }
+
+    // LOCAL MODE
+    payLocal();
+
+    // DB MODE 
+    // payWithDB();
+  }
+
+  return (
+    <div className={styles.box}>
+      <h1>Payment for {auction.name}</h1>
+
+      <p>Item Price: ${auction.currentPrice}</p>
+      <p>Shipping: ${baseShipping}</p>
+
+      {auction.expeditedPrice > 0 && (
+        <label>
+          <input
+            type="checkbox"
+            checked={useExpedited}
+            onChange={(e) => setUseExpedited(e.target.checked)}
+          />
+          Expedited Shipping (+${expedited})
+        </label>
+      )}
+
+      <h2>Total: ${total}</h2>
+
+      <h3>Payment Info</h3>
+
+      <input
+        className={styles.input}
+        placeholder="Card Number"
+        value={card.number}
+        onChange={(e) => setCard({ ...card, number: e.target.value })}
+      />
+
+      <input
+        className={styles.input}
+        placeholder="Name on Card"
+        value={card.name}
+        onChange={(e) => setCard({ ...card, name: e.target.value })}
+      />
+
+      <input
+        className={styles.input}
+        placeholder="Expiry Date"
+        value={card.expiry}
+        onChange={(e) => setCard({ ...card, expiry: e.target.value })}
+      />
+
+      <input
+        className={styles.input}
+        placeholder="CVV"
+        value={card.cvv}
+        onChange={(e) => setCard({ ...card, cvv: e.target.value })}
+      />
+
+      <button className={styles.payBtn} onClick={handlePayment}>
+        Submit Payment
+      </button>
+    </div>
+  );
+}
