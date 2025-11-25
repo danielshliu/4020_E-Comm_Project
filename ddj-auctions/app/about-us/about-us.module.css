@@ -1,0 +1,114 @@
+/* MAIN WRAPPER */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+}
+
+/* HERO */
+.hero {
+  position: relative;
+  height: 60vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.heroImage {
+  object-fit: cover;
+  filter: brightness(60%);
+}
+
+.heroText {
+  position: absolute;
+  bottom: 40px;
+  left: 50px;
+  color: white;
+}
+
+.heroText h1 {
+  font-size: 48px;
+  font-weight: 800;
+}
+
+.heroText p {
+  font-size: 20px;
+  opacity: 0.9;
+}
+
+/* SECTION LAYOUT */
+.section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 60px;
+  gap: 40px;
+}
+
+.reverse {
+  flex-direction: row-reverse;
+}
+
+.textBlock {
+  flex: 1;
+}
+
+.textBlock h2 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.textBlock p {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  font-size: 18px;
+}
+
+.sectionImage {
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* VALUES */
+.values {
+  text-align: center;
+  padding: 40px 60px;
+}
+
+.values h2 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 40px;
+}
+
+.valuesGrid {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+}
+
+.valueCard {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  width: 280px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: 0.3s ease;
+}
+
+.valueCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+}
+
+.valueCard h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.valueCard p {
+  font-size: 16px;
+  line-height: 1.5;
+}
