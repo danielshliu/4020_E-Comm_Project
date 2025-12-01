@@ -5,7 +5,7 @@ import styles from "../styles/HowItWorks.module.css";
 export default function HowItWorks() {
   return (
     <section className={styles.howSection}>
-      {/* Background Image */}
+     
       <Image
         src="/images/howitworks.jpg"
         alt="How It Works"
@@ -13,7 +13,6 @@ export default function HowItWorks() {
         className={styles.bgImage}
       />
 
-      {/* Overlay + Content Box */}
       <div className={styles.overlay}>
         <div className={styles.textBox}>
           <h3>HOW IT WORKS</h3>
@@ -25,7 +24,7 @@ export default function HowItWorks() {
             <li>Pay & Receive – Complete payment securely and track delivery</li>
           </ol>
 
-          <a href="#" className={styles.btn}>
+          <a href="/browse-auctions" className={styles.btn}>
             BID NOW
           </a>
         </div>

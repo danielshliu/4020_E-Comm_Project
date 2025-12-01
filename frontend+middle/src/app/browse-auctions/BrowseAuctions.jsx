@@ -1,12 +1,14 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import styles from "./Browse.module.css";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function BrowseAuctions() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
@@ -22,6 +24,15 @@ export default function BrowseAuctions() {
   }
 
   useEffect(() => {
+    const typeParam = (searchParams.get("type") || "").toLowerCase();
+    if (typeParam === "forward") {
+      setFilterType("Forward");
+    } else if (typeParam === "dutch") {
+      setFilterType("Dutch");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     // Detect admin
     const storedUser = sessionStorage.getItem("ddj-user");
     if (storedUser) {
@@ -32,19 +43,41 @@ export default function BrowseAuctions() {
     }
 
     // ============================================================
-    // 🔵 DATABASE VERSION (UNCOMMENT WHEN BACKEND IS READY)
+    // DATABASE VERSION: load auctions from DB
+    //    - Uncomment this block and comment out the local-storage
+    //      block when you connect your backend.
     // ============================================================
     /*
     async function loadFromDB() {
       try {
-        const res = await fetch("http://localhost:3000/api/controller/auction", {
+        let url = "/api/controller/auction";
+
+        // If you want the backend to filter by type too, you can
+        // pass it via query string:
+        // if (filterType === "Forward" || filterType === "Dutch") {
+        //   url += `?type=${filterType.toLowerCase()}`;
+        // }
+
+        const res = await fetch(url, {
           method: "GET",
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         });
 
         if (!res.ok) throw new Error("Failed to load auctions from DB");
         const data = await res.json();
 
+        // Expecting an array of rows like:
+        // {
+        //   auction_id,
+        //   title,
+        //   image_url,
+        //   auction_type,        // "FORWARD" or "DUTCH"
+        //   current_price,
+        //   end_time,
+        //   shipping_price,
+        //   expedited_price,
+        //   shipping_days
+        // }
         const normalized = data.map((row) => ({
           id: row.auction_id,
           name: row.title,
@@ -52,9 +85,9 @@ export default function BrowseAuctions() {
           auctionType: row.auction_type === "FORWARD" ? "Forward" : "Dutch",
           currentPrice: Number(row.current_price),
           remainingTime: calculateRemaining(row.end_time),
-          shippingPrice: Number(row.shipping_price),
-          expeditedPrice: Number(row.expedited_price),
-          shippingDays: Number(row.shipping_days)
+          shippingPrice: Number(row.shipping_price || 0),
+          expeditedPrice: Number(row.expedited_price || 0),
+          shippingDays: Number(row.shipping_days || 0),
         }));
 
         setItems(normalized);
@@ -68,7 +101,7 @@ export default function BrowseAuctions() {
     */
 
     // ============================================================
-    // 🔵 LOCAL STORAGE VERSION (ACTIVE)
+    // LOCAL STORAGE VERSION
     // ============================================================
     const saved = localStorage.getItem("ddj-items");
 
@@ -77,14 +110,14 @@ export default function BrowseAuctions() {
         id: item.id,
         name: item.name,
         image: item.image,
-        auctionType: item.auctionType,
+        auctionType: item.auctionType, // "Forward" or "Dutch"
         currentPrice: Number(item.currentPrice ?? item.price ?? 0),
         remainingTime: Number(item.remainingTime) || 0,
       }));
 
       setItems(parsed);
     }
-  }, []);
+  }, []); 
 
   // ============================================================
   // ADMIN DELETE ITEM
@@ -99,19 +132,17 @@ export default function BrowseAuctions() {
     setItems((prev) => prev.filter((i) => String(i.id) !== String(id)));
 
     // ============================================================
-    // 🔵 DATABASE DELETE VERSION (UNCOMMENT LATER)
+    // DATABASE VERSION
     // ============================================================
     /*
     try {
-      const res = await fetch(
-        `http://localhost:3000/api/controller/auction/${id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`/api/controller/auction/${id}`, {
+        method: "DELETE",
+      });
 
       if (!res.ok) throw new Error("Failed to delete item in DB");
 
-      // refresh list
-      const updated = items.filter((i) => i.id !== id);
+      const updated = items.filter((i) => String(i.id) !== String(id));
       setItems(updated);
     } catch (err) {
       console.error("DB delete error:", err);

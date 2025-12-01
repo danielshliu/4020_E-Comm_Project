@@ -24,7 +24,7 @@ export default function ContactPage() {
       {/* CONTACT GRID */}
       <section className={styles.grid}>
         
-        {/* LEFT — Contact Info */}
+        {/*  Contact Info */}
         <div className={styles.infoBox}>
           <h2>Get in Touch</h2>
 
@@ -44,7 +44,7 @@ export default function ContactPage() {
           <p>Sunday & Holidays: Closed</p>
         </div>
 
-        {/* RIGHT — Contact Form */}
+        {/*  Contact Form */}
         <form className={styles.form}>
           <h2>Send Us a Message</h2>
 

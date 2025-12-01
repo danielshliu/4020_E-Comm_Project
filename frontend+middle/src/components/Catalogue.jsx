@@ -26,7 +26,6 @@ export default function Catalogue() {
     );
   };
 
-  // Auto-scroll every 3 seconds
   useEffect(() => {
     const auto = setInterval(nextSlide, 3000);
     return () => clearInterval(auto);

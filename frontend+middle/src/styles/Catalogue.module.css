@@ -16,6 +16,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
 .arrowLeft,
@@ -37,6 +39,7 @@
 
 .centerBox {
   width: 75%;
+  max-width: 960px;
   height: 300px;
   display: flex;
   justify-content: center;
@@ -44,6 +47,7 @@
   overflow: hidden;
 }
 
+/* Card */
 .card {
   position: absolute;
   width: 270px;
@@ -56,6 +60,9 @@
 
 .card img {
   border-radius: 12px;
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .label {
@@ -65,40 +72,109 @@
   color: black;
 }
 
-/* === POSITION LOGIC === */
-/* Center */
+
 .pos0 {
   opacity: 1;
   transform: translateX(0px) scale(1);
   z-index: 5;
 }
 
-/* Right */
 .pos1 {
   opacity: 0.6;
   transform: translateX(280px) scale(0.8);
   z-index: 4;
 }
 
-/* Far right */
 .pos2 {
   opacity: 0.3;
   transform: translateX(520px) scale(0.6);
   z-index: 3;
 }
 
-/* Left */
 .pos4 {
   opacity: 0.6;
   transform: translateX(-280px) scale(0.8);
   z-index: 4;
 }
 
-/* Far left */
 .pos3 {
   opacity: 0.3;
   transform: translateX(-520px) scale(0.6);
   z-index: 3;
 }
 
+@media (max-width: 1024px) {
+  .centerBox {
+    width: 90%;
+  }
 
+  .card {
+    width: 240px;
+  }
+
+  .pos1 {
+    transform: translateX(220px) scale(0.8);
+  }
+
+  .pos2 {
+    transform: translateX(400px) scale(0.6);
+  }
+
+  .pos4 {
+    transform: translateX(-220px) scale(0.8);
+  }
+
+  .pos3 {
+    transform: translateX(-400px) scale(0.6);
+  }
+}
+
+@media (max-width: 640px) {
+  .wrapper {
+    padding: 30px 0 50px 0;
+  }
+
+  .title {
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+
+  .carousel {
+    padding: 0 10px;
+  }
+
+  .centerBox {
+    width: 100%;
+    height: auto;
+    min-height: 260px;
+  }
+
+  .card {
+    width: 80%;
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+  }
+
+  .pos0 {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    z-index: 5;
+  }
+
+  .pos1,
+  .pos2,
+  .pos3,
+  .pos4 {
+    display: none;
+  }
+
+  .arrowLeft,
+  .arrowRight {
+    font-size: 30px;
+    padding: 6px;
+  }
+
+  .label {
+    font-size: 18px;
+  }
+}

@@ -1,15 +1,17 @@
-/* MAIN WRAPPER */
+
 .wrapper {
   display: flex;
   flex-direction: column;
   gap: 80px;
 }
 
-/* HERO */
+
 .hero {
   position: relative;
-  height: 60vh;
-  width: 100%;
+  width: 100vw;            
+  height: 60vh;            
+  margin-left: 50%;         
+  transform: translateX(-50%);
   overflow: hidden;
 }
 
@@ -21,8 +23,9 @@
 .heroText {
   position: absolute;
   bottom: 40px;
-  left: 50px;
+  left: 60px;
   color: white;
+  z-index: 2;
 }
 
 .heroText h1 {
@@ -35,7 +38,6 @@
   opacity: 0.9;
 }
 
-/* SECTION LAYOUT */
 .section {
   display: flex;
   justify-content: space-between;
@@ -69,7 +71,6 @@
   object-fit: cover;
 }
 
-/* VALUES */
 .values {
   text-align: center;
   padding: 40px 60px;
@@ -85,6 +86,7 @@
   display: flex;
   justify-content: center;
   gap: 40px;
+  flex-wrap: wrap;
 }
 
 .valueCard {
@@ -92,14 +94,14 @@
   border-radius: 12px;
   padding: 25px;
   width: 280px;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
   text-align: center;
   transition: 0.3s ease;
 }
 
 .valueCard:hover {
   transform: translateY(-6px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
 }
 
 .valueCard h3 {
@@ -111,4 +113,56 @@
 .valueCard p {
   font-size: 16px;
   line-height: 1.5;
+}
+
+
+/* Tablets */
+@media (max-width: 1024px) {
+  .section {
+    flex-direction: column;
+    text-align: center;
+    padding: 0 40px;
+  }
+
+  .sectionImage {
+    width: 100%;
+    height: auto;
+    margin-top: 20px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .hero {
+    height: 45vh;
+  }
+
+  .heroText {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .heroText h1 {
+    font-size: 32px;
+  }
+
+  .heroText p {
+    font-size: 16px;
+  }
+
+  .values {
+    padding: 30px 20px;
+  }
+
+  .section {
+    padding: 0 20px;
+  }
+
+  .textBlock h2 {
+    font-size: 26px;
+  }
+
+  .textBlock p {
+    font-size: 16px;
+  }
 }

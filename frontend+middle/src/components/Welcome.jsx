@@ -21,7 +21,6 @@ export default function Welcome() {
           </p>
         </div>
 
-        {/* Divider */}
         <div className={styles.divider}></div>
 
         {/* Why Choose Us */}

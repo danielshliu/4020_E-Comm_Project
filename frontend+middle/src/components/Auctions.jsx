@@ -12,7 +12,10 @@ export default function Auctions() {
 
       <div className={styles.grid}>
         {/* FORWARD AUCTIONS */}
-        <Link href="/browse-auctions?type=forward" className={styles.card}>
+        <Link
+          href={{ pathname: "/browse-auctions", query: { type: "forward" } }}
+          className={styles.card}
+        >
           <div className={styles.imageWrapper}>
             <Image
               src="/images/forward.jpg"
@@ -26,7 +29,10 @@ export default function Auctions() {
         </Link>
 
         {/* DUTCH AUCTIONS */}
-        <Link href="/browse-auctions?type=dutch" className={styles.card}>
+        <Link
+          href={{ pathname: "/browse-auctions", query: { type: "dutch" } }}
+          className={styles.card}
+        >
           <div className={styles.imageWrapper}>
             <Image
               src="/images/dutch.jpg"

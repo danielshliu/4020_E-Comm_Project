@@ -10,6 +10,7 @@ export default function SignUpPage() {
   const [form, setForm] = useState({
     username: "",
     password: "",
+    email: "",
     firstName: "",
     lastName: "",
     street: "",
@@ -37,6 +38,11 @@ export default function SignUpPage() {
       return;
     }
 
+    if (users.some((u) => u.email === form.email)) {
+      setError("Email already registered.");
+      return;
+    }
+
     const newUser = {
       user_id: Date.now(),
       ...form,
@@ -52,7 +58,7 @@ export default function SignUpPage() {
   }
 
   // ============================
-  // Database version
+  // Database version (RESTORED)
   // ============================
   /*
   async function signupDB() {
@@ -90,12 +96,13 @@ export default function SignUpPage() {
         <form onSubmit={handleSubmit} className={styles.form}>
           <input name="username" placeholder="Username" onChange={handleChange} />
           <input name="password" placeholder="Password" type="password" onChange={handleChange} />
+          <input name="email" placeholder="Email Address" type="email" onChange={handleChange} />
 
           <input name="firstName" placeholder="First Name" onChange={handleChange} />
           <input name="lastName" placeholder="Last Name" onChange={handleChange} />
 
           <input name="street" placeholder="Street Name" onChange={handleChange} />
-          <input name="number" placeholder="Street Number" onChange={handleChange} />
+          <input name="number" placeholder="Unit Number" onChange={handleChange} />
           <input name="city" placeholder="City" onChange={handleChange} />
           <input name="country" placeholder="Country" onChange={handleChange} />
           <input name="postal" placeholder="Postal Code" onChange={handleChange} />

@@ -5,7 +5,6 @@
   text-align: center;
 }
 
-/* Title styling */
 .welcome h2 {
   font-family: "Montserrat", sans-serif;
   font-size: 32px;
@@ -18,50 +17,55 @@
   height: 4px;
   background: #d4a017;
   margin: 15px auto 60px;
+  border-radius: 4px;
 }
 
-/* Columns container */
+
 .columns {
   display: flex;
   justify-content: center;
   align-items: stretch;
-  padding: 0 40px;
+  flex-wrap: nowrap;
+  padding: 0 60px;
   gap: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* Each column */
 .column {
-  width: 32%;
+  flex: 1;
+  min-width: 280px;
+  background: white;
+  padding: 30px 25px;
+  border-radius: 12px;
+  box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.08);
   text-align: left;
 }
 
-/* Column headings */
 .column h3 {
   font-family: "Montserrat", sans-serif;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   text-align: center;
 }
 
-/* Body text */
 .column p {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.6;
-  white-space: normal;
+  color: #222;
 }
 
-/* Vertical dividers */
 .divider {
   width: 1px;
-  background: #c7c7c7;
+  background: #d0d0d0;
 }
 
-/* Responsive for tablets */
 @media (max-width: 1024px) {
   .columns {
-    flex-direction: column;
-    gap: 60px;
+    flex-wrap: wrap;
+    gap: 40px;
+    padding: 0 30px;
   }
 
   .divider {
@@ -70,10 +74,39 @@
 
   .column {
     width: 100%;
+    max-width: 650px;
+    margin: 0 auto;
     text-align: center;
   }
 
   .column p {
     text-align: left;
+  }
+}
+
+@media (max-width: 600px) {
+  .welcome {
+    padding: 60px 0;
+  }
+
+  .columns {
+    padding: 0 20px;
+    gap: 35px;
+  }
+
+  .column {
+    padding: 25px 20px;
+  }
+
+  .column h3 {
+    font-size: 22px;
+  }
+
+  .column p {
+    font-size: 15px;
+  }
+
+  .underline {
+    margin-bottom: 40px;
   }
 }

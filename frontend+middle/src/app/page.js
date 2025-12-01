@@ -28,7 +28,7 @@ export default function HomePage() {
 
   return (
     <div className={styles.page}>
-      {/* Full-screen modern hero */}
+    
       <section className={styles.heroSection}>
         <Hero />
       </section>

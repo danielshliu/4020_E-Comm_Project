@@ -6,64 +6,67 @@
   overflow: hidden;
 }
 
-/* Background image */
 .bgImage {
   object-fit: cover;
-  filter: brightness(0.75);
+  object-position: center;
+  z-index: 1;
+  filter: brightness(0.7);
 }
 
-/* Dark overlay to enhance contrast */
 .overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: rgba(0, 0, 0, 0.35);
+
   display: flex;
   align-items: center;
   justify-content: flex-start;
+
   padding-left: 60px;
 }
 
-/* The left translucent box */
 .textBox {
-  background: rgba(255, 255, 255, 0.85);
-  padding: 30px 40px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 32px 40px;
+  border-radius: 10px;
+
   max-width: 420px;
+  width: 100%;
+  backdrop-filter: blur(3px);
 }
 
-/* Heading */
 .textBox h3 {
-  font-family: "Montserrat", sans-serif;
   font-size: 26px;
   font-weight: 700;
   color: #111;
 }
 
-/* Sub-heading */
 .textBox h4 {
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 17px;
   font-weight: 700;
   color: #333;
 }
 
-/* Numbered List */
 .textBox ol {
-  margin: 15px 0 25px 20px;
+  margin: 18px 0 28px 20px;
+  padding: 0;
   line-height: 1.6;
   font-size: 15px;
   color: #111;
 }
 
-/* Button */
 .btn {
   display: inline-block;
   background: #2b2b6e;
-  color: #fff;
-  padding: 10px 25px;
-  border-radius: 4px;
-  font-family: "Montserrat", sans-serif;
+  color: white;
+  padding: 11px 28px;
+  border-radius: 6px;
   font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+  text-decoration: none;
   transition: background 0.2s ease;
 }
 
@@ -71,35 +74,57 @@
   background: #1f1f54;
 }
 
-/* RESPONSIVE */
+
 @media (max-width: 900px) {
   .howSection {
-    height: 480px;
+    height: 460px;
   }
 
   .overlay {
-    padding-left: 20px;
+    padding-left: 25px;
   }
 
   .textBox {
-    width: 90%;
-    max-width: none;
+    max-width: 380px;
+    padding: 28px 32px;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .howSection {
     height: auto;
-    padding: 40px 0;
+    padding: 60px 0;
   }
 
   .overlay {
     justify-content: center;
     padding: 30px;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.45);
   }
 
   .textBox {
+    max-width: 100%;
+    padding: 26px 24px;
+  }
+}
+
+@media (max-width: 500px) {
+  .textBox h3 {
+    font-size: 22px;
+  }
+
+  .textBox h4 {
+    font-size: 16px;
+  }
+
+  .textBox ol {
+    font-size: 14px;
+    margin-left: 16px;
+  }
+
+  .btn {
     width: 100%;
+    text-align: center;
+    padding: 12px 0;
   }
 }

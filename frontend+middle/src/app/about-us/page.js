@@ -6,7 +6,7 @@ import styles from "./about-us.module.css";
 export default function AboutUsPage() {
   return (
     <div className={styles.wrapper}>
-      {/* HERO SECTION */}
+      {/*  hero */}
       <section className={styles.hero}>
         <Image
           src="https://images.unsplash.com/photo-1517430816045-df4b7de11d1d"
@@ -20,7 +20,7 @@ export default function AboutUsPage() {
         </div>
       </section>
 
-      {/* OUR STORY */}
+      {/* our story */}
       <section className={styles.section}>
         <div className={styles.textBlock}>
           <h2>Our Story</h2>
@@ -44,7 +44,7 @@ export default function AboutUsPage() {
         />
       </section>
 
-      {/* OUR VISION */}
+      {/* our vision */}
       <section className={`${styles.section} ${styles.reverse}`}>
         <Image
           src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d"
@@ -68,7 +68,7 @@ export default function AboutUsPage() {
         </div>
       </section>
 
-      {/* VALUES */}
+      {/* values */}
       <section className={styles.values}>
         <h2>What We Believe In</h2>
 

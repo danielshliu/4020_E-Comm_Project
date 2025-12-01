@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import styles from "./Pay.module.css";
 
 export default function PayPage(props) {
-  // Next.js unwrap
+  
   const { id } = use(props.params);
   const auctionId = String(id);
 
@@ -21,9 +21,10 @@ export default function PayPage(props) {
   });
 
   const user = JSON.parse(sessionStorage.getItem("ddj-user") || "{}");
+  const [shippingAddress, setShippingAddress] = useState(user.address || "");
 
   // ======================================================
-  // database mode
+  // database mode 
   // ======================================================
   /*
   useEffect(() => {
@@ -45,12 +46,13 @@ export default function PayPage(props) {
         console.error("DB Auction Load Error:", err);
       }
     }
+
     loadFromDB();
   }, [auctionId]);
   */
 
   // ======================================================
-  // local storage mode
+  // local storage mode (CURRENT DEMO)
   // ======================================================
   useEffect(() => {
     const saved = localStorage.getItem("ddj-items");
@@ -84,7 +86,7 @@ export default function PayPage(props) {
         body: JSON.stringify({
           auction_id: auctionId,
           payer_id: user.user_id,
-          shipping_address: user.address,
+          shipping_address: shippingAddress,
           expedited: useExpedited ? true : false,
         }),
       });
@@ -101,7 +103,7 @@ export default function PayPage(props) {
   */
 
   // ======================================================
-  // local storage payment
+  // local storage payment (CURRENT DEMO)
   // ======================================================
   function payLocal() {
     // winner check
@@ -117,7 +119,7 @@ export default function PayPage(props) {
       payer: user.username || "You",
       totalPaid: total,
       expedited: useExpedited,
-      shippingAddress: user.address || "123 Default Street",
+      shippingAddress: shippingAddress || "123 Default Street",
       createdAt: Date.now(),
       shippingDays: auction.shippingDays,
     };
@@ -138,59 +140,79 @@ export default function PayPage(props) {
     // LOCAL MODE
     payLocal();
 
-    // DB MODE 
+    // DB MODE
     // payWithDB();
   }
 
   return (
     <div className={styles.box}>
-      <h1>Payment for {auction.name}</h1>
+      <h1 className={styles.title}>Payment for {auction.name}</h1>
 
-      <p>Item Price: ${auction.currentPrice}</p>
-      <p>Shipping: ${baseShipping}</p>
+      <div className={styles.summary}>
+        <p>Item Price: ${auction.currentPrice}</p>
+        <p>Shipping: ${baseShipping}</p>
 
-      {auction.expeditedPrice > 0 && (
-        <label>
-          <input
-            type="checkbox"
-            checked={useExpedited}
-            onChange={(e) => setUseExpedited(e.target.checked)}
-          />
-          Expedited Shipping (+${expedited})
-        </label>
-      )}
+        {auction.expeditedPrice > 0 && (
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={useExpedited}
+              onChange={(e) => setUseExpedited(e.target.checked)}
+            />
+            <span>Expedited Shipping (+${expedited})</span>
+          </label>
+        )}
 
-      <h2>Total: ${total}</h2>
+        <h2 className={styles.total}>Total: ${total}</h2>
+      </div>
 
-      <h3>Payment Info</h3>
+      <div className={styles.shippingSection}>
+        <h3 className={styles.sectionTitle}>Shipping Address</h3>
+        <p className={styles.userLine}>
+          Logged in as: <strong>{user.username || "Guest"}</strong>
+        </p>
+        <textarea
+          className={styles.textarea}
+          placeholder="Enter your shipping address"
+          value={shippingAddress}
+          onChange={(e) => setShippingAddress(e.target.value)}
+        />
+        <p className={styles.helperText}>
+          Please confirm your shipping address is correct before submitting payment.
+        </p>
+      </div>
 
-      <input
-        className={styles.input}
-        placeholder="Card Number"
-        value={card.number}
-        onChange={(e) => setCard({ ...card, number: e.target.value })}
-      />
+      <div className={styles.paymentSection}>
+        <h3 className={styles.sectionTitle}>Payment Info</h3>
 
-      <input
-        className={styles.input}
-        placeholder="Name on Card"
-        value={card.name}
-        onChange={(e) => setCard({ ...card, name: e.target.value })}
-      />
+        <input
+          className={styles.input}
+          placeholder="Card Number"
+          value={card.number}
+          onChange={(e) => setCard({ ...card, number: e.target.value })}
+        />
 
-      <input
-        className={styles.input}
-        placeholder="Expiry Date"
-        value={card.expiry}
-        onChange={(e) => setCard({ ...card, expiry: e.target.value })}
-      />
+        <input
+          className={styles.input}
+          placeholder="Name on Card"
+          value={card.name}
+          onChange={(e) => setCard({ ...card, name: e.target.value })}
+        />
 
-      <input
-        className={styles.input}
-        placeholder="CVV"
-        value={card.cvv}
-        onChange={(e) => setCard({ ...card, cvv: e.target.value })}
-      />
+        <input
+          className={styles.input}
+          placeholder="Expiry Date (MM/YY)"
+          value={card.expiry}
+          onChange={(e) => setCard({ ...card, expiry: e.target.value })}
+        />
+
+        <input
+          className={styles.input}
+          placeholder="CVV"
+          value={card.cvv}
+          onChange={(e) => setCard({ ...card, cvv: e.target.value })}
+        />
+      </div>
 
       <button className={styles.payBtn} onClick={handlePayment}>
         Submit Payment

@@ -1,42 +1,48 @@
 .page {
-  background: white;
+  background: #ffffff;
   overflow-x: hidden;
 }
 
 /* ============================= */
-/* HERO SECTION – Full Modern BG */
+/* HERO SECTION  */
+/* now acts ONLY as a wrapper — no height, no gradient */
 /* ============================= */
 .heroSection {
   width: 100%;
-  min-height: 80vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  background: linear-gradient(
-    135deg,
-    #0d0d0d 0%,
-    #1a1a1a 40%,
-    #333333 100%
-  );
-
-  padding-top: 20px;
-  padding-bottom: 40px;
+  margin: 0;
+  padding: 0;
 }
 
 /* ============================= */
 /* UNIFIED SECTIONS (Clean + Modern) */
 /* ============================= */
 .section {
+  width: 100%;
   max-width: 1300px;
-  margin: 120px auto;
+  margin: 100px auto;
   padding: 0 30px;
 }
 
-/* Reduce spacing on mobile */
+/* Medium screens */
+@media (max-width: 1024px) {
+  .section {
+    margin: 80px auto;
+    padding: 0 22px;
+  }
+}
+
+/* Tablets & down */
 @media (max-width: 768px) {
   .section {
-    margin: 70px auto;
-    padding: 0 20px;
+    margin: 60px auto;
+    padding: 0 18px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .section {
+    margin: 45px auto;
+    padding: 0 14px;
   }
 }

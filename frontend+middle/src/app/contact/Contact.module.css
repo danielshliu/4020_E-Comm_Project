@@ -1,11 +1,10 @@
-/* WRAPPER */
+
 .wrapper {
   display: flex;
   flex-direction: column;
   gap: 80px;
 }
 
-/* HERO */
 .hero {
   position: relative;
   width: 100%;
@@ -35,7 +34,6 @@
   opacity: 0.9;
 }
 
-/* GRID */
 .grid {
   display: flex;
   justify-content: space-between;
@@ -43,7 +41,6 @@
   gap: 50px;
 }
 
-/* INFO BOX */
 .infoBox {
   flex: 1;
   padding: 30px;
@@ -69,7 +66,6 @@
   font-weight: 600;
 }
 
-/* CONTACT FORM */
 .form {
   flex: 1;
   display: flex;
@@ -117,9 +113,8 @@
   background: #333;
 }
 
-/* MAP */
 .mapSection {
-  padding: 30px 60px;
+  padding: 30px 60px 60px;
   text-align: center;
 }
 
@@ -134,4 +129,65 @@
   border: none;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+
+@media (max-width: 1024px) {
+  .grid {
+    padding: 0 30px;
+    gap: 30px;
+  }
+
+  .mapSection {
+    padding: 30px 30px 50px;
+  }
+
+  .heroText {
+    left: 30px;
+  }
+
+  .heroText h1 {
+    font-size: 38px;
+  }
+
+  .heroText p {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    height: 45vh;
+  }
+
+  .heroText {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .heroText h1 {
+    font-size: 30px;
+  }
+
+  .heroText p {
+    font-size: 16px;
+  }
+
+  .grid {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .infoBox,
+  .form {
+    padding: 20px 18px;
+  }
+
+  .mapSection {
+    padding: 20px;
+  }
+
+  .wrapper {
+    gap: 50px;
+  }
 }

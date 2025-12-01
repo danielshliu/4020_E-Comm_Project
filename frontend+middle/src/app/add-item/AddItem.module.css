@@ -1,11 +1,11 @@
-/* Container */
+
 .outer {
   display: flex;
   justify-content: center;
   padding: 40px 20px;
+  min-height: calc(100vh - 80px);
 }
 
-/* White Card */
 .card {
   width: 100%;
   max-width: 650px;
@@ -15,7 +15,6 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
 }
 
-/* Title */
 .title {
   font-size: 32px;
   font-weight: 800;
@@ -23,7 +22,6 @@
   text-align: center;
 }
 
-/* Label */
 .label {
   font-size: 14px;
   font-weight: 600;
@@ -32,7 +30,6 @@
   color: #333;
 }
 
-/* Inputs */
 .input {
   width: 100%;
   padding: 12px;
@@ -41,6 +38,7 @@
   background: #fafafa;
   font-size: 16px;
   outline: none;
+  box-sizing: border-box;
 }
 
 .textarea {
@@ -52,9 +50,9 @@
   background: #fafafa;
   font-size: 16px;
   resize: none;
+  box-sizing: border-box;
 }
 
-/* Buttons */
 .saveBtn {
   margin-top: 25px;
   width: 100%;
@@ -88,4 +86,53 @@
 
 .deleteBtn:hover {
   background: #8a0018;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .outer {
+    padding: 24px 16px;
+    min-height: auto;
+  }
+
+  .card {
+    padding: 28px 18px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  }
+
+  .title {
+    font-size: 26px;
+    margin-bottom: 22px;
+  }
+
+  .input,
+  .textarea {
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  .saveBtn,
+  .deleteBtn {
+    font-size: 15px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 22px 14px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .label {
+    font-size: 13px;
+  }
+
+  .input,
+  .textarea {
+    font-size: 14px;
+  }
 }

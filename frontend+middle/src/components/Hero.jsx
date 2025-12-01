@@ -6,7 +6,7 @@ export default function Hero() {
   return (
     <section className={styles.hero}>
       <Image
-        src="/images/banner.jpg"
+        src="/images/auctionplaced.jpg"
         alt="Auction Banner"
         fill
         priority

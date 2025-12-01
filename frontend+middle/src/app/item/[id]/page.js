@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import styles from "./Item.module.css"; 
 
 export default function ItemPage(props) {
-  // Next.js 16: unwrap params
   const { id } = use(props.params);
   const auctionId = String(id);
 
@@ -16,7 +15,6 @@ export default function ItemPage(props) {
   const [userBid, setUserBid] = useState("");
   const [hasEnded, setHasEnded] = useState(false);
 
-  // Helper for DB mode
   function calculateRemaining(endTime) {
     const end = new Date(endTime);
     const now = new Date();
