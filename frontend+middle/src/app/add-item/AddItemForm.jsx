@@ -86,7 +86,7 @@ export default function AddItemForm() {
   // Data base version 
   // ------------------------------------------------------------
   
-  async function saveToDB() {
+  async function handleSubmit() {
     try {
       const sessionUser = JSON.parse(sessionStorage.getItem("ddj-user"));
       const seller_id = sessionUser?.user_id;
@@ -95,6 +95,13 @@ export default function AddItemForm() {
         alert("User not logged in.");
         return;
       }
+
+      console.log('Creating item with:', {
+        seller_id,
+        title: form.name,
+        description: form.description,
+        image_url: form.image
+      });
 
       // 1️ Create item in catalogue
       const itemRes = await fetch("/api/controller/catalogue/createItem", {
@@ -109,7 +116,12 @@ export default function AddItemForm() {
       });
 
       const itemData = await itemRes.json();
-      if (!itemRes.ok) throw new Error(itemData.error);
+      
+      console.log('Item response:', { status: itemRes.status, data: itemData });
+      
+      if (!itemRes.ok) {
+        throw new Error(itemData.error || itemData.details || 'Failed to create item');
+      }
 
       const item_id = itemData.item_id;
 
@@ -117,7 +129,15 @@ export default function AddItemForm() {
       const endTime = new Date(Date.now() + Number(form.remainingTime) * 3600000)
         .toISOString();
 
-      // 3️ Create auction entry
+      console.log('Creating auction with:', {
+        item_id,
+        seller_id,
+        auction_type: form.auctionType === "Forward" ? "FORWARD" : "DUTCH",
+        start_price: Number(form.price),
+        end_time: endTime
+      });
+
+      // 3️ Create auction entry - FIX THIS LINE: Change from /catalouge/createItem to /auction/create
       const auctionRes = await fetch("/api/controller/auction/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,40 +147,39 @@ export default function AddItemForm() {
           auction_type: form.auctionType === "Forward" ? "FORWARD" : "DUTCH",
           start_price: Number(form.price),
           current_price: Number(form.price),
-
           end_time: endTime,
-
-          // FORWARD ignores Dutch fields
           reserve_price:
             form.auctionType === "Dutch"
               ? Number(form.reservePrice)
               : null,
-
           price_drop_step:
             form.auctionType === "Dutch"
               ? Number(form.priceDropStep)
               : null,
-
           step_interval_sec:
             form.auctionType === "Dutch"
               ? Number(form.priceDropIntervalSec)
               : null,
-
-          shipping_price: Number(form.shippingPrice),
-          expedited_price: Number(form.expeditedPrice),
-          shipping_days: Number(form.shippingDays)
+          shipping_price: Number(form.shippingPrice) || 10,
+          expedited_price: Number(form.expeditedPrice) || 15,
+          shipping_days: Number(form.shippingDays) || 5
         })
       });
 
       const auctionData = await auctionRes.json();
-      if (!auctionRes.ok) throw new Error(auctionData.error);
+      
+      console.log('Auction response:', { status: auctionRes.status, data: auctionData });
+      
+      if (!auctionRes.ok) {
+        throw new Error(auctionData.error || auctionData.details || 'Failed to create auction');
+      }
 
       alert("Item + Auction created in DB!");
       window.location.href = "/browse-auctions";
 
     } catch (err) {
       console.error("DB ERROR:", err);
-      alert(err.message);
+      alert("Error: " + err.message);
     }
   }
   

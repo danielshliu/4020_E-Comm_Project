@@ -50,7 +50,7 @@ export default function PayPage(props) {
     loadFromDB();
   }, [auctionId]);
   
- if (!auction) return <p>Loading...</p>;
+  if (!auction) return <p>Loading...</p>;
 
   const baseShipping = auction.shippingPrice;
   const expedited = auction.expeditedPrice;
@@ -84,7 +84,27 @@ export default function PayPage(props) {
   // ======================================================
   
   async function payWithDB() {
+    // Check if user is logged in
+    if (!user || !user.user_id) {
+      alert("You must be logged in to make a payment.");
+      router.push("/signin");
+      return;
+    }
+
+    // Validate shipping address
+    if (!shippingAddress || shippingAddress.trim() === "") {
+      alert("Please enter a shipping address.");
+      return;
+    }
+
     try {
+      console.log('Sending payment:', {
+        auction_id: auctionId,
+        payer_id: user.user_id,
+        shipping_address: shippingAddress,
+        expedited: useExpedited,
+      }); // Debug log
+
       const res = await fetch("/api/payment/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,8 +117,9 @@ export default function PayPage(props) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || 'Payment failed');
 
+      // Store receipt for display
       sessionStorage.setItem("ddj-receipt", JSON.stringify({
         id: data.payment.payment_id,
         auctionId: auction.id,

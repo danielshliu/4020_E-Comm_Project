@@ -16,15 +16,19 @@ INSERT INTO items (seller_id, title, description, image_url) VALUES
 (4, 'Vintage Camera', 'Rare 1960s film camera in excellent condition', 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400'),
 (5, 'Gaming Console', 'PS5 with 2 controllers and 3 games', 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400');
 
--- AUCTIONS (with shipping info and winner_id)
+-- AUCTIONS (with 1 minute timer for testing)
+-- Using NOW() + INTERVAL to set end times relative to current time
 INSERT INTO auctions (item_id, seller_id, winner_id, auction_type, start_price, current_price, end_time, shipping_price, expedited_price, shipping_days)
 VALUES 
-(1, 1, NULL, 'FORWARD', 100, 120, '2025-12-10 18:00:00', 10, 15, 5),  -- Vintage Clock - won by Charlie
-(2, 4, NULL, 'DUTCH', 500, 500, '2025-12-15 20:00:00', 15, 20, 7),    -- Art Painting - won by Charlie
-(3, 1, NULL, 'FORWARD', 600, 650, '2025-12-12 19:30:00', 12, 18, 5),  -- Laptop - still active
-(4, 5, NULL, 'DUTCH', 2000, 2000, '2025-12-20 15:00:00', 20, 30, 10), -- Designer Watch - won by Charlie
-(5, 4, NULL, 'DUTCH', 800, 800, '2025-12-18 12:00:00', 15, 22, 7),    -- Vintage Camera - won by Frank
-(6, 5, NULL, 'DUTCH', 600, 600, '2025-12-22 18:00:00', 10, 15, 5);    -- Gaming Console - won by Frank
+-- Forward Auctions with 1 minute timer
+(1, 1, NULL, 'FORWARD', 100, 120, NOW() + INTERVAL '3 minute', 10, 15, 5),  -- Ends in 1 minute
+(3, 1, NULL, 'FORWARD', 600, 650, NOW() + INTERVAL '3 minute', 12, 18, 5),  -- Ends in 1 minute
+
+-- Dutch Auctions with longer timers
+(2, 4, NULL, 'DUTCH', 500, 500, NOW() + INTERVAL '10 minutes', 15, 20, 7),    -- Ends in 10 minutes
+(4, 5, NULL, 'DUTCH', 2000, 2000, NOW() + INTERVAL '15 minutes', 20, 30, 10), -- Ends in 15 minutes
+(5, 4, NULL, 'DUTCH', 800, 800, NOW() + INTERVAL '20 minutes', 15, 22, 7),    -- Ends in 20 minutes
+(6, 5, NULL, 'DUTCH', 600, 600, NOW() + INTERVAL '30 minutes', 10, 15, 5);    -- Ends in 30 minutes
 
 -- FORWARD_AUCTIONS
 INSERT INTO forward_auctions (auction_id, min_increment, reserve_price) VALUES
@@ -76,7 +80,7 @@ INSERT INTO payments (auction_id, payer_id, shipping_address, expedited, payment
 
 
 -- View all auctions with item and seller info
-SELECT a.auction_id, i.title, u.username AS seller, a.auction_type, a.start_price, a.current_price, a.shipping_price, a.expedited_price, a.winner_id
+SELECT a.auction_id, i.title, u.username AS seller, a.auction_type, a.start_price, a.current_price, a.end_time, a.shipping_price, a.expedited_price, a.winner_id
 FROM auctions a
 JOIN items i ON a.item_id = i.item_id
 JOIN users u ON a.seller_id = u.user_id;

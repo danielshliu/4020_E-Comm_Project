@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -20,7 +19,20 @@ export default function BrowseAuctions() {
     const end = new Date(endTime);
     const now = new Date();
     const diff = end - now;
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60)));
+    
+    if (diff <= 0) return "Ended";
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
   }
 
   useEffect(() => {
@@ -42,18 +54,10 @@ export default function BrowseAuctions() {
       } catch {}
     }
 
-    // ============================================================
-    // DATABASE VERSION: load auctions from DB
-    //    - Uncomment this block and comment out the local-storage
-    //      block when you connect your backend.
-    // ============================================================
-    
     async function loadFromDB() {
       try {
         let url = "/api/controller/auction";
 
-        // If you want the backend to filter by type too, you can
-        // pass it via query string:
         if (filterType === "Forward" || filterType === "Dutch") {
           url += `?type=${filterType.toLowerCase()}`;
         }
@@ -66,23 +70,15 @@ export default function BrowseAuctions() {
         if (!res.ok) throw new Error("Failed to load auctions from DB");
         const data = await res.json();
 
-        // Expecting an array of rows like:
-        // {
-        //   auction_id,
-        //   title,
-        //   image_url,
-        //   auction_type,        // "FORWARD" or "DUTCH"
-        //   current_price,
-        //   end_time,
+        console.log('Loaded auctions:', data); // Debug log
 
-        // }
         const normalized = data.map((row) => ({
           id: row.auction_id,
           name: row.title,
           image: row.image_url,
           auctionType: row.auction_type === "FORWARD" ? "Forward" : "Dutch",
           currentPrice: Number(row.current_price),
-          remainingTime: calculateRemaining(row.end_time),
+          endTime: row.end_time, // Store the actual end_time
         }));
 
         setItems(normalized);
@@ -93,43 +89,17 @@ export default function BrowseAuctions() {
 
     loadFromDB();
 
-    
+    // Update timer every second
+    const interval = setInterval(() => {
+      setItems(prevItems => [...prevItems]); // Force re-render to update times
+    }, 1000);
 
-    // ============================================================
-    // LOCAL STORAGE VERSION
-    // ============================================================
-    // const saved = localStorage.getItem("ddj-items");
-
-    // if (saved) {
-    //   const parsed = JSON.parse(saved).map((item) => ({
-    //     id: item.id,
-    //     name: item.name,
-    //     image: item.image,
-    //     auctionType: item.auctionType, // "Forward" or "Dutch"
-    //     currentPrice: Number(item.currentPrice ?? item.price ?? 0),
-    //     remainingTime: Number(item.remainingTime) || 0,
-    //   }));
-
-    //   setItems(parsed);
-    // }
+    return () => clearInterval(interval);
   }, [filterType]); 
 
-  // ============================================================
-  // ADMIN DELETE ITEM
-  // ============================================================
   async function handleDelete(id) {
     if (!confirm("Delete this item?")) return;
 
-    // LOCAL MODE:
-    // const saved = JSON.parse(localStorage.getItem("ddj-items") || "[]");
-    // const filtered = saved.filter((i) => String(i.id) !== String(id));
-    // localStorage.setItem("ddj-items", JSON.stringify(filtered));
-    // setItems((prev) => prev.filter((i) => String(i.id) !== String(id)));
-
-    // ============================================================
-    // DATABASE VERSION
-    // ============================================================
-    
     try {
       const res = await fetch(`/api/controller/auction/${id}`, {
         method: "DELETE",
@@ -142,7 +112,6 @@ export default function BrowseAuctions() {
     } catch (err) {
       console.error("DB delete error:", err);
     }
-    
   }
 
   // SEARCH + FILTER + SORT
@@ -156,8 +125,16 @@ export default function BrowseAuctions() {
     .sort((a, b) => {
       if (sortOption === "priceAsc") return a.currentPrice - b.currentPrice;
       if (sortOption === "priceDesc") return b.currentPrice - a.currentPrice;
-      if (sortOption === "timeAsc") return a.remainingTime - b.remainingTime;
-      if (sortOption === "timeDesc") return b.remainingTime - a.remainingTime;
+      if (sortOption === "timeAsc") {
+        const timeA = new Date(a.endTime) - new Date();
+        const timeB = new Date(b.endTime) - new Date();
+        return timeA - timeB;
+      }
+      if (sortOption === "timeDesc") {
+        const timeA = new Date(a.endTime) - new Date();
+        const timeB = new Date(b.endTime) - new Date();
+        return timeB - timeA;
+      }
       return 0;
     });
 
@@ -204,49 +181,53 @@ export default function BrowseAuctions() {
           <p className={styles.noItems}>No items found.</p>
         )}
 
-        {filteredItems.map((item) => (
-          <div key={item.id} className={styles.card}>
-            <Image
-              src={item.image}
-              width={300}
-              height={250}
-              alt={item.name}
-              className={styles.image}
-            />
+        {filteredItems.map((item) => {
+          const timeLeft = calculateRemaining(item.endTime);
+          
+          return (
+            <div key={item.id} className={styles.card}>
+              <Image
+                src={item.image}
+                width={300}
+                height={250}
+                alt={item.name}
+                className={styles.image}
+              />
 
-            <h3 className={styles.name}>{item.name}</h3>
+              <h3 className={styles.name}>{item.name}</h3>
 
-            <p className={styles.price}>
-              ${item.currentPrice.toLocaleString()}
-            </p>
+              <p className={styles.price}>
+                ${item.currentPrice.toLocaleString()}
+              </p>
 
-            <p className={styles.type}>
-              {item.auctionType === "Forward"
-                ? "Forward Auction"
-                : "Dutch Auction"}
-            </p>
+              <p className={styles.type}>
+                {item.auctionType === "Forward"
+                  ? "Forward Auction"
+                  : "Dutch Auction"}
+              </p>
 
-            <p className={styles.timeLeft}>
-              ⏳ {item.remainingTime} hours left
-            </p>
+              <p className={styles.timeLeft}>
+                ⏳ {timeLeft}
+              </p>
 
-            <button
-              className={styles.bidBtn}
-              onClick={() => router.push(`/item/${item.id}`)}
-            >
-              Bid / View
-            </button>
-
-            {isAdmin && (
               <button
-                className={styles.deleteBtn}
-                onClick={() => handleDelete(item.id)}
+                className={styles.bidBtn}
+                onClick={() => router.push(`/item/${item.id}`)}
               >
-                Delete Item
+                Bid / View
               </button>
-            )}
-          </div>
-        ))}
+
+              {isAdmin && (
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => handleDelete(item.id)}
+                >
+                  Delete Item
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

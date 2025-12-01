@@ -53,41 +53,64 @@ router.get("/auction/:auction_id", async(req, res) => {
     }
 });
 //done
-router.post("/auction/buy", async(req,res)=>{
-    try{
-        const response = await fetch(`${AUCTION_SERVICE_URL}/buy`,{
+// Buy now - FIX: Get auction_id from body
+router.post("/auction/buy", async(req, res) => {
+    try {
+        const { auction_id, buyer_id, accepted_price } = req.body;
+        
+        if (!auction_id) {
+            return res.status(400).json({ error: 'auction_id is required' });
+        }
+
+        console.log('Controller forwarding buy to:', `${AUCTION_SERVICE_URL}/${auction_id}/buy`);
+        
+        const response = await fetch(`${AUCTION_SERVICE_URL}/${auction_id}/buy`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(req.body)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ buyer_id, accepted_price })
         });
         
         const data = await response.json();
-
-        //check if the purchased went through
-        if(!response.ok) throw new Error(data.error || 'Failed to process purchaase');
-    
-        res.json({
-            message: 'Purchase Successfull',
-            transaction: data
-        });
         
-    }catch(err){
-        res.status(500).json("Auction Purchase Error", {error: err.messsage});
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
+        res.json(data);
+    } catch(err) {
+        console.error('Controller Buy Error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
 //done
-router.post("/auction/bid", async(req,res) =>{
-    try{
-        const response = await fetch(`${AUCTION_SERVICE_URL}/bid`,{
+// Place bid - FIX: Get auction_id from body and put in URL
+router.post("/auction/bid", async(req, res) => {
+    try {
+        const { auction_id, bidder_id, amount } = req.body;
+        
+        if (!auction_id) {
+            return res.status(400).json({ error: 'auction_id is required' });
+        }
+
+        console.log('Controller forwarding bid to:', `${AUCTION_SERVICE_URL}/${auction_id}/bid`);
+        
+        const response = await fetch(`${AUCTION_SERVICE_URL}/${auction_id}/bid`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(req.body)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bidder_id, amount })
         });
+        
         const data = await response.json();
+        
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
         res.json(data);
-    }catch(err){
-        res.status(500).json("Auction Bidding Error", {error: err.messsage});
+    } catch(err) {
+        console.error('Controller Bid Error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -136,14 +159,24 @@ router.get('/catalogue/search', async (req, res) => {
 
 //CREATE ITEM
 //done
-router.post('/catalogue/createItems', async (req, res) => {
+router.post('/catalogue/createItem', async (req, res) => {
     try {
-        const response = await fetch(`${CATALOGUE_SERVICE_URL}/items`, {
+        console.log('Controller creating item:', req.body); // Debug
+        
+        const response = await fetch(`${CATALOGUE_SERVICE_URL}/createItems`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(req.body)
         });
+        
         const data = await response.json();
+        
+        console.log('Catalogue response:', { status: response.status, data }); // Debug
+        
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
         res.status(201).json(data);
     } catch (err) {
         console.error('Catalogue Service Error:', err);
@@ -340,6 +373,31 @@ router.post('/user/resetpassword', async (req, res) => {
     }
 });
 
+// ADD THIS: Create auction route
+router.post('/auction/create', async (req, res) => {
+    try {
+        console.log('Controller creating auction:', req.body); // Debug
+        
+        const response = await fetch(`${AUCTION_SERVICE_URL}/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+        
+        const data = await response.json();
+        
+        console.log('Auction create response:', { status: response.status, data }); // Debug
+        
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
+        res.status(201).json(data);
+    } catch (err) {
+        console.error('Controller Create Auction Error:', err);
+        res.status(500).json({ error: 'Failed to create auction', details: err.message });
+    }
+});
 
 
 

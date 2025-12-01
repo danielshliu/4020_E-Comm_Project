@@ -6,7 +6,6 @@ router.use(express.json());
 
 // Get all active auction listings
 router.get('/', async (req, res) => {
-
     try {
         //query all the live active auction in listings
         const result = await db.query(`
@@ -23,17 +22,19 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get specfic auction details with item info and bids
+// Get specific auction details with item info and bids
 router.get('/:auction_id', async (req, res) => {
     try {
         const { auction_id } = req.params;
         
         console.log('Fetching auction:', auction_id); // Debug log
         
+        // Get auction details
         const result = await db.query(
           `SELECT 
             a.auction_id,
             a.seller_id,
+            a.winner_id,
             a.auction_type,
             a.start_price,
             a.current_price,
@@ -44,9 +45,13 @@ router.get('/:auction_id', async (req, res) => {
             i.item_id,
             i.title,
             i.description,
-            i.image_url
+            i.image_url,
+            seller.username AS seller_username,
+            winner.username AS winner_username
           FROM auctions a
           JOIN items i ON a.item_id = i.item_id
+          JOIN users seller ON a.seller_id = seller.user_id
+          LEFT JOIN users winner ON a.winner_id = winner.user_id
           WHERE a.auction_id = $1`,
           [auction_id]
         );
@@ -55,8 +60,29 @@ router.get('/:auction_id', async (req, res) => {
           return res.status(404).json({ error: 'Auction not found' });
         }
 
-        console.log('Auction found:', result.rows[0]); // Debug log
-        res.json(result.rows[0]);
+        const auction = result.rows[0];
+
+        // Get bids for forward auctions (ordered by amount DESC to get highest first)
+        if (auction.auction_type === 'FORWARD') {
+          const bidsResult = await db.query(
+            `SELECT 
+              b.bid_id,
+              b.amount,
+              b.created_at,
+              u.user_id AS bidder_id,
+              u.username AS bidder_username
+            FROM bids b
+            JOIN users u ON b.bidder_id = u.user_id
+            WHERE b.auction_id = $1
+            ORDER BY b.amount DESC, b.created_at DESC`,
+            [auction_id]
+          );
+          
+          auction.bids = bidsResult.rows;
+        }
+
+        console.log('Auction found with bids:', auction); // Debug log
+        res.json(auction);
     } catch (err) {
         console.error('Get auction by ID error:', err);
         res.status(500).json({ error: err.message });
@@ -65,8 +91,12 @@ router.get('/:auction_id', async (req, res) => {
 
 // Forward Auction Bidding
 router.post('/bid', async(req, res) => {
-    const { auction_id, amount } = req.body;
-    const bidder_id = 1; // This will be replaced with the real user_id
+    const { auction_id } = req.params;
+    const { bidder_id, amount } = req.body;
+    
+    if (!bidder_id || !amount) {
+        return res.status(400).json({ error: 'bidder_id and amount are required' });
+    }
     
     try {
         await db.query('BEGIN');
@@ -91,9 +121,14 @@ router.post('/bid', async(req, res) => {
             throw new Error("Not a forward auction");
         }
 
+        // Check if auction has ended
+        if (new Date(auction.end_time) < new Date()) {
+            throw new Error("Auction has ended");
+        }
+
         const minValidBid = auction.current_price + auction.min_increment;
         if (amount < minValidBid) {
-            throw new Error(`Bid too low. Minimum bid required: ${minValidBid}`);
+            throw new Error(`Bid too low. Minimum bid required: $${minValidBid}`);
         }
 
         // Insert a new bid
@@ -116,14 +151,19 @@ router.post('/bid', async(req, res) => {
         });
     } catch (err) {
         await db.query('ROLLBACK');
+        console.error('Bid error:', err);
         res.status(400).json({ error: err.message });
     }
 });
 
-// Dutch Auction Accept Price
-router.post('/buy', async(req, res) => {
-    const { auction_id, accept } = req.body;
-    const buyer_id = 1; // This will be replaced with the real user_id
+// Dutch Auction Buy Now - SIMPLIFIED
+router.post('/:auction_id/buy', async(req, res) => {
+    const { auction_id } = req.params;
+    const { buyer_id, accepted_price } = req.body;
+
+    if (!buyer_id) {
+        return res.status(400).json({ error: 'buyer_id is required' });
+    }
 
     try {
         await db.query('BEGIN');
@@ -147,11 +187,16 @@ router.post('/buy', async(req, res) => {
             throw new Error("Not a dutch auction");
         }
 
-        // Record the acceptance
+        // Check if auction has ended
+        if (new Date(auction.end_time) < new Date()) {
+            throw new Error("Auction has ended");
+        }
+
+        // Record the acceptance with accepted = true
         await db.query(`
             INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price, accepted)
-            VALUES ($1, $2, $3, $4)
-        `, [auction_id, buyer_id, auction.current_price, accept]);
+            VALUES ($1, $2, $3, true)
+        `, [auction_id, buyer_id, accepted_price || auction.current_price]);
 
 
         //If the buyer accpets the order and confirms it then, item is purchased
@@ -210,7 +255,85 @@ router.post('/buy', async(req, res) => {
     
     } catch (err) {
         await db.query('ROLLBACK');
+        console.error('Buy error:', err);
         res.status(400).json({ error: err.message });
+    }
+});
+
+// Create new auction
+router.post('/create', async (req, res) => {
+    try {
+        const {
+            item_id,
+            seller_id,
+            auction_type,
+            start_price,
+            current_price,
+            end_time,
+            reserve_price,
+            price_drop_step,
+            step_interval_sec,
+            shipping_price,
+            expedited_price,
+            shipping_days
+        } = req.body;
+
+        console.log('Creating auction:', req.body); // Debug
+
+        if (!item_id || !seller_id || !auction_type || !start_price || !end_time) {
+            return res.status(400).json({ 
+                error: 'item_id, seller_id, auction_type, start_price, and end_time are required' 
+            });
+        }
+
+        await db.query('BEGIN');
+
+        // Insert auction
+        const auctionResult = await db.query(
+            `INSERT INTO auctions (
+                item_id, seller_id, auction_type, start_price, current_price, 
+                end_time, shipping_price, expedited_price, shipping_days
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+            RETURNING *`,
+            [
+                item_id, 
+                seller_id, 
+                auction_type, 
+                start_price, 
+                current_price || start_price, 
+                end_time,
+                shipping_price || 10,
+                expedited_price || 15,
+                shipping_days || 5
+            ]
+        );
+
+        const auction = auctionResult.rows[0];
+
+        console.log('Auction created:', auction); // Debug
+
+        // Insert type-specific data
+        if (auction_type === 'FORWARD') {
+            await db.query(
+                `INSERT INTO forward_auctions (auction_id, min_increment, reserve_price) 
+                 VALUES ($1, $2, $3)`,
+                [auction.auction_id, 10, reserve_price || start_price]
+            );
+        } else if (auction_type === 'DUTCH') {
+            await db.query(
+                `INSERT INTO dutch_auctions (auction_id, price_drop_step, step_interval_sec) 
+                 VALUES ($1, $2, $3)`,
+                [auction.auction_id, price_drop_step || 10, step_interval_sec || 60]
+            );
+        }
+
+        await db.query('COMMIT');
+
+        res.status(201).json(auction);
+    } catch (err) {
+        await db.query('ROLLBACK');
+        console.error('Create auction error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
