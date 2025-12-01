@@ -1,0 +1,130 @@
+.howSection {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  margin-top: 40px;
+  overflow: hidden;
+}
+
+.bgImage {
+  object-fit: cover;
+  object-position: center;
+  z-index: 1;
+  filter: brightness(0.7);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  padding-left: 60px;
+}
+
+.textBox {
+  background: rgba(255, 255, 255, 0.88);
+  padding: 32px 40px;
+  border-radius: 10px;
+
+  max-width: 420px;
+  width: 100%;
+  backdrop-filter: blur(3px);
+}
+
+.textBox h3 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111;
+}
+
+.textBox h4 {
+  margin-top: 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+.textBox ol {
+  margin: 18px 0 28px 20px;
+  padding: 0;
+  line-height: 1.6;
+  font-size: 15px;
+  color: #111;
+}
+
+.btn {
+  display: inline-block;
+  background: #2b2b6e;
+  color: white;
+  padding: 11px 28px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.btn:hover {
+  background: #1f1f54;
+}
+
+
+@media (max-width: 900px) {
+  .howSection {
+    height: 460px;
+  }
+
+  .overlay {
+    padding-left: 25px;
+  }
+
+  .textBox {
+    max-width: 380px;
+    padding: 28px 32px;
+  }
+}
+
+@media (max-width: 700px) {
+  .howSection {
+    height: auto;
+    padding: 60px 0;
+  }
+
+  .overlay {
+    justify-content: center;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .textBox {
+    max-width: 100%;
+    padding: 26px 24px;
+  }
+}
+
+@media (max-width: 500px) {
+  .textBox h3 {
+    font-size: 22px;
+  }
+
+  .textBox h4 {
+    font-size: 16px;
+  }
+
+  .textBox ol {
+    font-size: 14px;
+    margin-left: 16px;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+    padding: 12px 0;
+  }
+}

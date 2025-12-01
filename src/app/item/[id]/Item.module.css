@@ -1,0 +1,160 @@
+.wrapper {
+min-height: 100vh;
+max-width: 960px;
+margin: 0 auto;
+padding: 24px 16px 40px;
+display: flex;
+flex-direction: column;
+gap: 16px;
+}
+
+.wrapper h1 {
+font-size: 1.8rem;
+font-weight: 700;
+margin-bottom: 0.75rem;
+}
+
+
+.image {
+width: 100%;
+max-height: 420px;
+object-fit: cover;
+border-radius: 12px;
+margin-bottom: 16px;
+}
+
+
+.desc {
+font-size: 0.98rem;
+line-height: 1.6;
+margin-bottom: 10px;
+color: #374151;
+}
+
+
+.price {
+font-size: 1.3rem;
+font-weight: 700;
+margin-bottom: 8px;
+color: #111827;
+}
+
+
+.time {
+font-size: 0.95rem;
+margin-bottom: 14px;
+color: #4b5563;
+}
+
+
+.input {
+padding: 0.7rem 0.8rem;
+width: 220px;
+max-width: 100%;
+border: 1px solid #d1d5db;
+border-radius: 8px;
+margin-right: 10px;
+font-size: 0.95rem;
+}
+
+.input:focus {
+outline: none;
+border-color: #111827;
+box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.12);
+}
+
+
+.bidBtn,
+.buyBtn,
+.payBtn {
+padding: 0.75rem 1.4rem;
+border-radius: 999px;
+border: none;
+cursor: pointer;
+font-size: 0.96rem;
+font-weight: 600;
+transition:
+background-color 0.12s ease,
+box-shadow 0.12s ease,
+transform 0.06s ease;
+}
+
+
+.bidBtn {
+background: #1d4ed8;
+color: #ffffff;
+box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+}
+
+.bidBtn:hover {
+background: #1e40af;
+transform: translateY(-1px);
+box-shadow: 0 14px 32px rgba(37, 99, 235, 0.45);
+}
+
+
+.buyBtn {
+background: #f97316;
+color: #ffffff;
+box-shadow: 0 10px 25px rgba(249, 115, 22, 0.35);
+}
+
+.buyBtn:hover {
+background: #ea580c;
+transform: translateY(-1px);
+box-shadow: 0 14px 32px rgba(249, 115, 22, 0.45);
+}
+
+.endBox {
+text-align: center;
+padding: 28px 20px;
+border: 1px solid #e5e7eb;
+border-radius: 14px;
+background-color: #f9fafb;
+margin-top: 20px;
+}
+
+.endBox h2 {
+font-size: 1.4rem;
+margin-bottom: 8px;
+}
+
+.endBox p {
+margin-bottom: 6px;
+font-size: 0.98rem;
+}
+
+.payBtn {
+margin-top: 16px;
+background: #16a34a;
+color: #ffffff;
+box-shadow: 0 10px 25px rgba(22, 163, 74, 0.35);
+}
+
+.payBtn:hover {
+background: #15803d;
+transform: translateY(-1px);
+box-shadow: 0 14px 32px rgba(22, 163, 74, 0.45);
+}
+
+@media (max-width: 640px) {
+.wrapper {
+padding: 20px 14px 32px;
+}
+
+.wrapper h1 {
+font-size: 1.4rem;
+}
+
+.input {
+width: 100%;
+margin-right: 0;
+margin-bottom: 10px;
+}
+
+.bidBtn,
+.buyBtn {
+width: 100%;
+text-align: center;
+}
+}

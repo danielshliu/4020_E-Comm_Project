@@ -1,0 +1,98 @@
+.footer {
+background: #000b3f;
+color: white;
+padding: 24px 16px;
+width: 100%;
+margin-top: 40px;
+}
+
+.container {
+max-width: 1200px;
+margin: 0 auto;
+display: flex;
+justify-content: space-between;
+align-items: center;
+gap: 24px;
+flex-wrap: wrap;
+}
+
+.left {
+flex-shrink: 0;
+}
+
+.left img {
+display: block;
+height: auto;
+}
+
+.right {
+display: flex;
+flex-direction: column;
+gap: 10px;
+flex: 1;
+min-width: 260px;
+}
+
+.topRow {
+display: flex;
+align-items: center;
+gap: 16px;
+font-weight: 500;
+font-size: 0.9rem;
+flex-wrap: wrap;
+justify-content: flex-end;
+}
+
+.topRow a {
+color: white;
+text-decoration: none;
+}
+
+.topRow a:hover {
+text-decoration: underline;
+}
+
+.divider {
+width: 2px;
+height: 22px;
+background: white;
+}
+
+/* Thin line */
+.line {
+width: 100%;
+height: 1px;
+background: white;
+opacity: 0.6;
+}
+
+.bottomRow {
+display: flex;
+justify-content: space-between;
+gap: 24px;
+font-weight: 600;
+font-size: 0.9rem;
+flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+.footer {
+padding: 20px 16px 28px;
+}
+
+.container {
+flex-direction: column;
+align-items: flex-start;
+gap: 16px;
+}
+
+.topRow {
+justify-content: flex-start;
+}
+
+.bottomRow {
+flex-direction: column;
+align-items: flex-start;
+gap: 6px;
+}
+}
