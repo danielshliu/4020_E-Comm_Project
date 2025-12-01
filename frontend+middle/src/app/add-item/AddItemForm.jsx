@@ -44,48 +44,48 @@ export default function AddItemForm() {
   // ------------------------------------------------------------
   // LOCAL STORAGE MODE
   // ------------------------------------------------------------
-  const handleSubmit = () => {
-    let items = JSON.parse(localStorage.getItem("ddj-items") || "[]");
+  // const handleSubmit = () => {
+  //   let items = JSON.parse(localStorage.getItem("ddj-items") || "[]");
 
-    const newItem = {
-      id: editing ? form.id : Date.now().toString(),
-      name: form.name,
-      description: form.description,
-      image: form.image,
-      auctionType: form.auctionType,
-      currentPrice: Number(form.price),
-      shippingPrice: Number(form.shippingPrice),
-      expeditedPrice: Number(form.expeditedPrice),
-      shippingDays: Number(form.shippingDays),
-      remainingTime: Number(form.remainingTime),
-      reservePrice:
-        form.auctionType === "Dutch" ? Number(form.reservePrice) : 0,
-      priceDropStep:
-        form.auctionType === "Dutch" ? Number(form.priceDropStep) : 0,
-      priceDropIntervalSec:
-        form.auctionType === "Dutch"
-          ? Number(form.priceDropIntervalSec)
-          : 0,
-      highestBidder: "None",
-      winner: null,
-    };
+  //   const newItem = {
+  //     id: editing ? form.id : Date.now().toString(),
+  //     name: form.name,
+  //     description: form.description,
+  //     image: form.image,
+  //     auctionType: form.auctionType,
+  //     currentPrice: Number(form.price),
+  //     shippingPrice: Number(form.shippingPrice),
+  //     expeditedPrice: Number(form.expeditedPrice),
+  //     shippingDays: Number(form.shippingDays),
+  //     remainingTime: Number(form.remainingTime),
+  //     reservePrice:
+  //       form.auctionType === "Dutch" ? Number(form.reservePrice) : 0,
+  //     priceDropStep:
+  //       form.auctionType === "Dutch" ? Number(form.priceDropStep) : 0,
+  //     priceDropIntervalSec:
+  //       form.auctionType === "Dutch"
+  //         ? Number(form.priceDropIntervalSec)
+  //         : 0,
+  //     highestBidder: "None",
+  //     winner: null,
+  //   };
 
-    if (editing) {
-      items = items.map((i) => (i.id === newItem.id ? newItem : i));
-      sessionStorage.removeItem("editing-item");
-    } else {
-      items.push(newItem);
-    }
+  //   if (editing) {
+  //     items = items.map((i) => (i.id === newItem.id ? newItem : i));
+  //     sessionStorage.removeItem("editing-item");
+  //   } else {
+  //     items.push(newItem);
+  //   }
 
-    localStorage.setItem("ddj-items", JSON.stringify(items));
-    alert(editing ? "Item updated!" : "Item added!");
-    window.location.href = "/browse-auctions";
-  };
+  //   localStorage.setItem("ddj-items", JSON.stringify(items));
+  //   alert(editing ? "Item updated!" : "Item added!");
+  //   window.location.href = "/browse-auctions";
+  // };
 
   // ------------------------------------------------------------
   // Data base version 
   // ------------------------------------------------------------
-  /*
+  
   async function saveToDB() {
     try {
       const sessionUser = JSON.parse(sessionStorage.getItem("ddj-user"));
@@ -163,7 +163,7 @@ export default function AddItemForm() {
       alert(err.message);
     }
   }
-  */
+  
 
   return (
     <div className={styles.outer}>

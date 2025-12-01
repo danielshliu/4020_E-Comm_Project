@@ -35,16 +35,17 @@ const transporter = nodemailer.createTransport({
 //Sign up POST function
 router.post('/signup',async(req, res)=>{
   try{
-    const{username, email, password} = req.body;
+    const{username, password, email, firstName, lastName, street, number, city, country, postal} = req.body;
 
     //hash the password
     const password_hash = await bcrypt.hash(password,10);
 
+    const address = `${street} ${number}, ${city}, ${country}, ${postal}`;
     const result = await db.query(
-      `INSERT INTO users (username,email,password_hash)
-      VALUES ($1, $2, $3)
+      `INSERT INTO users (username,password_hash,email, first_name, last_name, address)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING user_id, username, email`,
-      [username,email,password_hash]
+      [username,password_hash,email, firstName,lastName,address]
     );
 
   
@@ -60,13 +61,13 @@ router.post('/signup',async(req, res)=>{
 //Sign in POST function
 router.post('/signin',async(req,res)=>{
   try{
-    const{email, password} = req.body;
+    const{username, password} = req.body;
 
     // console.log('Signin attempt for email:', email);
 
     const result = await db.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
+      'SELECT * FROM users WHERE username = $1',
+      [username]
     );
 
     const user = result.rows[0];

@@ -24,33 +24,41 @@ router.get('/', async (req, res) => {
 });
 
 // Get specfic auction details with item info and bids
-router.get('/:auction_id', async(req, res) => {
-    const { auction_id } = req.params;
+router.get('/:auction_id', async (req, res) => {
     try {
-        // Get auction and item details for the specific
-        const auctionQuery = await db.query(`
-            SELECT a.*, i.title, i.description, i.image_url,
-                   u.username as seller_username
-            FROM auctions a
-            JOIN items i ON a.item_id = i.item_id
-            JOIN users u ON a.seller_id = u.user_id
-            WHERE a.auction_id = $1
-        `, [auction_id]);
+        const { auction_id } = req.params;
+        
+        console.log('Fetching auction:', auction_id); // Debug log
+        
+        const result = await db.query(
+          `SELECT 
+            a.auction_id,
+            a.seller_id,
+            a.auction_type,
+            a.start_price,
+            a.current_price,
+            a.end_time,
+            a.shipping_price,
+            a.expedited_price,
+            a.shipping_days,
+            i.item_id,
+            i.title,
+            i.description,
+            i.image_url
+          FROM auctions a
+          JOIN items i ON a.item_id = i.item_id
+          WHERE a.auction_id = $1`,
+          [auction_id]
+        );
 
-        // Get bids if it's a forward auction
-        const bidsQuery = await db.query(`
-            SELECT b.*, u.username as bidder_username
-            FROM bids b
-            JOIN users u ON b.bidder_id = u.user_id
-            WHERE b.auction_id = $1
-            ORDER BY b.amount DESC
-        `, [auction_id]);
+        if (result.rows.length === 0) {
+          return res.status(404).json({ error: 'Auction not found' });
+        }
 
-        res.json({
-            auction: auctionQuery.rows[0],
-            bids: bidsQuery.rows
-        });
+        console.log('Auction found:', result.rows[0]); // Debug log
+        res.json(result.rows[0]);
     } catch (err) {
+        console.error('Get auction by ID error:', err);
         res.status(500).json({ error: err.message });
     }
 });

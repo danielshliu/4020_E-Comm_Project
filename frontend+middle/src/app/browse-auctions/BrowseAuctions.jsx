@@ -47,16 +47,16 @@ export default function BrowseAuctions() {
     //    - Uncomment this block and comment out the local-storage
     //      block when you connect your backend.
     // ============================================================
-    /*
+    
     async function loadFromDB() {
       try {
         let url = "/api/controller/auction";
 
         // If you want the backend to filter by type too, you can
         // pass it via query string:
-        // if (filterType === "Forward" || filterType === "Dutch") {
-        //   url += `?type=${filterType.toLowerCase()}`;
-        // }
+        if (filterType === "Forward" || filterType === "Dutch") {
+          url += `?type=${filterType.toLowerCase()}`;
+        }
 
         const res = await fetch(url, {
           method: "GET",
@@ -74,9 +74,7 @@ export default function BrowseAuctions() {
         //   auction_type,        // "FORWARD" or "DUTCH"
         //   current_price,
         //   end_time,
-        //   shipping_price,
-        //   expedited_price,
-        //   shipping_days
+
         // }
         const normalized = data.map((row) => ({
           id: row.auction_id,
@@ -85,9 +83,6 @@ export default function BrowseAuctions() {
           auctionType: row.auction_type === "FORWARD" ? "Forward" : "Dutch",
           currentPrice: Number(row.current_price),
           remainingTime: calculateRemaining(row.end_time),
-          shippingPrice: Number(row.shipping_price || 0),
-          expeditedPrice: Number(row.expedited_price || 0),
-          shippingDays: Number(row.shipping_days || 0),
         }));
 
         setItems(normalized);
@@ -97,27 +92,27 @@ export default function BrowseAuctions() {
     }
 
     loadFromDB();
-    return;
-    */
+
+    
 
     // ============================================================
     // LOCAL STORAGE VERSION
     // ============================================================
-    const saved = localStorage.getItem("ddj-items");
+    // const saved = localStorage.getItem("ddj-items");
 
-    if (saved) {
-      const parsed = JSON.parse(saved).map((item) => ({
-        id: item.id,
-        name: item.name,
-        image: item.image,
-        auctionType: item.auctionType, // "Forward" or "Dutch"
-        currentPrice: Number(item.currentPrice ?? item.price ?? 0),
-        remainingTime: Number(item.remainingTime) || 0,
-      }));
+    // if (saved) {
+    //   const parsed = JSON.parse(saved).map((item) => ({
+    //     id: item.id,
+    //     name: item.name,
+    //     image: item.image,
+    //     auctionType: item.auctionType, // "Forward" or "Dutch"
+    //     currentPrice: Number(item.currentPrice ?? item.price ?? 0),
+    //     remainingTime: Number(item.remainingTime) || 0,
+    //   }));
 
-      setItems(parsed);
-    }
-  }, []); 
+    //   setItems(parsed);
+    // }
+  }, [filterType]); 
 
   // ============================================================
   // ADMIN DELETE ITEM
@@ -126,15 +121,15 @@ export default function BrowseAuctions() {
     if (!confirm("Delete this item?")) return;
 
     // LOCAL MODE:
-    const saved = JSON.parse(localStorage.getItem("ddj-items") || "[]");
-    const filtered = saved.filter((i) => String(i.id) !== String(id));
-    localStorage.setItem("ddj-items", JSON.stringify(filtered));
-    setItems((prev) => prev.filter((i) => String(i.id) !== String(id)));
+    // const saved = JSON.parse(localStorage.getItem("ddj-items") || "[]");
+    // const filtered = saved.filter((i) => String(i.id) !== String(id));
+    // localStorage.setItem("ddj-items", JSON.stringify(filtered));
+    // setItems((prev) => prev.filter((i) => String(i.id) !== String(id)));
 
     // ============================================================
     // DATABASE VERSION
     // ============================================================
-    /*
+    
     try {
       const res = await fetch(`/api/controller/auction/${id}`, {
         method: "DELETE",
@@ -147,7 +142,7 @@ export default function BrowseAuctions() {
     } catch (err) {
       console.error("DB delete error:", err);
     }
-    */
+    
   }
 
   // SEARCH + FILTER + SORT

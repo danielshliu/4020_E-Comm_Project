@@ -15,52 +15,53 @@ export default function ReceiptPage(props) {
   // ======================================================
   // db rcpt mode
   // ======================================================
-  /*
+  
   useEffect(() => {
     async function loadReceiptFromDB() {
       try {
-        const res = await fetch(`/api/payment/receipt/${auctionId}`);
+        const res = await fetch(`/api/controller/payment/receipt/${auctionId}`);
 
         if (!res.ok) throw new Error("Failed to load receipt from DB");
         const data = await res.json();
 
         setReceipt({
-          id: data.receipt.receipt_id,
-          auctionId: data.receipt.auction_id,
-          name: data.receipt.title,
-          payer: data.receipt.payer_username,
-          totalPaid: Number(data.receipt.total_paid),
-          expedited: !!data.receipt.expedited,
-          shippingAddress: data.receipt.shipping_address,
-          shippingDays: Number(data.receipt.shipping_days),
-          createdAt: new Date(data.receipt.created_at).getTime(),
+          id: data.payment_id,
+          auctionId: data.auction_id,
+          name: data.title,
+          payer: data.payer_username,
+          totalPaid: Number(data.total_paid),
+          expedited: !!data.expedited,
+          shippingAddress: data.shipping_address,
+          shippingDays: Number(data.shipping_days || 5),
+          createdAt: new Date(data.created_at).getTime(),
         });
       } catch (err) {
         console.error("DB Receipt Load Error:", err);
+        alert("Failed to load receipt: " + err.message);
       }
     }
 
     loadReceiptFromDB();
   }, [auctionId]);
-  */
+  
 
   // ======================================================
   // local
   // ======================================================
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("ddj-receipt");
-      if (!saved) return;
+  // useEffect(() => {
+  //   try {
+  //     const saved = localStorage.getItem("ddj-receipt");
+  //     if (!saved) return;
 
-      const parsed = JSON.parse(saved);
+  //     const parsed = JSON.parse(saved);
 
-      if (String(parsed.auctionId) === auctionId) {
-        setReceipt(parsed);
-      }
-    } catch (err) {
-      console.error("Local Receipt Parse Error:", err);
-    }
-  }, [auctionId]);
+  //     if (String(parsed.auctionId) === auctionId) {
+  //       setReceipt(parsed);
+  //     }
+  //   } catch (err) {
+  //     console.error("Local Receipt Parse Error:", err);
+  //   }
+  // }, [auctionId]);
 
   if (!receipt) return <p>Loading receipt...</p>;
 

@@ -24,62 +24,67 @@ export default function ItemPage(props) {
   }
 
   useEffect(() => {
-    // ======================================================
-    // database version
-    // ======================================================
-    /*
     async function loadFromDB() {
-      const res = await fetch(`/api/controller/auction/${auctionId}`);
-      const data = await res.json();
+      try {
+        const res = await fetch(`/api/controller/auction/${auctionId}`);
+        
+        if (!res.ok) throw new Error('Failed to load auction');
+        
+        const data = await res.json();
+        
+        console.log('Auction data:', data); // Debug log
 
-      const timeLeft = calculateRemaining(data.auction.end_time);
+        const timeLeft = calculateRemaining(data.end_time);
 
-      setAuction({
-        id: data.auction.auction_id,
-        name: data.auction.title,
-        description: data.auction.description,
-        image: data.auction.image_url,
-        auctionType: data.auction.auction_type === "FORWARD" ? "Forward" : "Dutch",
-        currentPrice: Number(data.auction.current_price),
-        highestBidder: data.bids.length ? data.bids[0].bidder_username : "None",
-        remainingTime: timeLeft,
-        shippingPrice: Number(data.auction.shipping_price),
-        expeditedPrice: Number(data.auction.expedited_price),
-        shippingDays: Number(data.auction.shipping_days),
-        winner: data.winner_username,
-      });
+        setAuction({
+          id: data.auction_id,
+          name: data.title,
+          description: data.description,
+          image: data.image_url,
+          auctionType: data.auction_type === "FORWARD" ? "Forward" : "Dutch",
+          currentPrice: Number(data.current_price),
+          highestBidder: data.bids && data.bids.length ? data.bids[0].bidder_username : "None",
+          remainingTime: timeLeft,
+          shippingPrice: Number(data.shipping_price || 10),
+          expeditedPrice: Number(data.expedited_price || 15),
+          shippingDays: Number(data.shipping_days || 5),
+          winner: data.winner_username,
+        });
 
-      if (timeLeft <= 0 || data.winner_username) {
-        setHasEnded(true);
+        if (timeLeft <= 0 || data.winner_username) {
+          setHasEnded(true);
+        }
+      } catch (err) {
+        console.error('Load auction error:', err);
+        alert('Failed to load auction details');
       }
     }
 
     loadFromDB();
-    return;
-    */
+  
 
     // ======================================================
     // local storage version
     // ======================================================
-    const saved = localStorage.getItem("ddj-items");
-    if (!saved) return;
+    // const saved = localStorage.getItem("ddj-items");
+    // if (!saved) return;
 
-    const all = JSON.parse(saved);
-    const found = all.find((x) => String(x.id) === auctionId);
+    // const all = JSON.parse(saved);
+    // const found = all.find((x) => String(x.id) === auctionId);
 
-    if (found) {
-      const timeLeft = Number(found.remainingTime);
+    // if (found) {
+    //   const timeLeft = Number(found.remainingTime);
 
-      setAuction({
-        ...found,
-        currentPrice: Number(found.currentPrice),
-        shippingPrice: Number(found.shippingPrice),
-        expeditedPrice: Number(found.expeditedPrice),
-        shippingDays: Number(found.shippingDays),
-      });
+    //   setAuction({
+    //     ...found,
+    //     currentPrice: Number(found.currentPrice),
+    //     shippingPrice: Number(found.shippingPrice),
+    //     expeditedPrice: Number(found.expeditedPrice),
+    //     shippingDays: Number(found.shippingDays),
+    //   });
 
-      if (timeLeft <= 0 || found.winner) setHasEnded(true);
-    }
+    //   if (timeLeft <= 0 || found.winner) setHasEnded(true);
+    // }
   }, [auctionId]);
 
   // ======================================================
@@ -122,8 +127,8 @@ export default function ItemPage(props) {
     const saved = JSON.parse(localStorage.getItem("ddj-items"));
     const index = saved.findIndex((x) => String(x.id) === auctionId);
 
-    saved[index].winner = "You";
-    saved[index].remainingTime = 0;
+    // saved[index].winner = "You";
+    // saved[index].remainingTime = 0;
 
     localStorage.setItem("ddj-items", JSON.stringify(saved));
 

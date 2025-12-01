@@ -14,27 +14,26 @@ export default function SignInPage() {
   // ============================
   // LOCAL STORAGE SIGN IN
   // ============================
-  function localLogin() {
-    const users = JSON.parse(localStorage.getItem("ddj-users") || "[]");
+  // function localLogin() {
+  //   const users = JSON.parse(localStorage.getItem("ddj-users") || "[]");
 
-    const found = users.find(
-      (u) => u.username === username && u.password === password
-    );
+  //   const found = users.find(
+  //     (u) => u.username === username && u.password === password
+  //   );
 
-    if (!found) {
-      setError("Incorrect username or password.");
-      return;
-    }
+  //   if (!found) {
+  //     setError("Incorrect username or password.");
+  //     return;
+  //   }
 
-    sessionStorage.setItem("ddj-user", JSON.stringify(found));
-    document.cookie = "ddj-user=logged; path=/;";
-    router.push("/");
-  }
+  //   sessionStorage.setItem("ddj-user", JSON.stringify(found));
+  //   document.cookie = "ddj-user=logged; path=/;";
+  //   router.push("/");
+  // }
 
   // ============================
   // database version
   // ============================
-  /*
   async function loginDB() {
     try {
       const res = await fetch("/api/controller/user/signin", {
@@ -53,7 +52,7 @@ export default function SignInPage() {
       setError("Login failed. Please try again.");
     }
   }
-  */
+  
 
   function adminLogin() {
     const admin = {
@@ -69,7 +68,8 @@ export default function SignInPage() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    localLogin(); // replace with loginDB() later
+    // localLogin();
+    loginDB(); // replace with loginDB() later
   }
 
   return (

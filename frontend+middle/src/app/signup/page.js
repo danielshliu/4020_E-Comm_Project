@@ -30,37 +30,37 @@ export default function SignUpPage() {
   // ============================
   // LOCAL SIGNUP
   // ============================
-  function localSignup() {
-    const users = JSON.parse(localStorage.getItem("ddj-users") || "[]");
+  // function localSignup() {
+  //   const users = JSON.parse(localStorage.getItem("ddj-users") || "[]");
 
-    if (users.some((u) => u.username === form.username)) {
-      setError("Username already exists.");
-      return;
-    }
+  //   if (users.some((u) => u.username === form.username)) {
+  //     setError("Username already exists.");
+  //     return;
+  //   }
 
-    if (users.some((u) => u.email === form.email)) {
-      setError("Email already registered.");
-      return;
-    }
+  //   if (users.some((u) => u.email === form.email)) {
+  //     setError("Email already registered.");
+  //     return;
+  //   }
 
-    const newUser = {
-      user_id: Date.now(),
-      ...form,
-      address: `${form.street} ${form.number}, ${form.city}, ${form.country}, ${form.postal}`,
-      role: "user",
-    };
+  //   const newUser = {
+  //     user_id: Date.now(),
+  //     ...form,
+  //     address: `${form.street} ${form.number}, ${form.city}, ${form.country}, ${form.postal}`,
+  //     role: "user",
+  //   };
 
-    users.push(newUser);
-    localStorage.setItem("ddj-users", JSON.stringify(users));
+  //   users.push(newUser);
+  //   localStorage.setItem("ddj-users", JSON.stringify(users));
 
-    setSuccess("Account created! Redirecting...");
-    setTimeout(() => router.push("/signin"), 1200);
-  }
+  //   setSuccess("Account created! Redirecting...");
+  //   setTimeout(() => router.push("/signin"), 1200);
+  // }
 
   // ============================
   // Database version (RESTORED)
   // ============================
-  /*
+  
   async function signupDB() {
     try {
       const res = await fetch("/api/controller/user/signup", {
@@ -70,19 +70,24 @@ export default function SignUpPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Signup failed');
+      }
 
       setSuccess("Account created! Redirecting...");
       setTimeout(() => router.push("/signin"), 1200);
     } catch (err) {
-      setError("Signup failed. Try again.");
+      console.error('Signup error:', err);
+      setError(err.message || "Signup failed. Try again.");
     }
   }
-  */
+
 
   function handleSubmit(e) {
     e.preventDefault();
-    localSignup(); // swap with signupDB() when ready
+    // localSignup();
+    signupDB(); // swap with signupDB() when ready
   }
 
   return (

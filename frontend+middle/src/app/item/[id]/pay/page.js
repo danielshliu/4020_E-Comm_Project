@@ -26,7 +26,7 @@ export default function PayPage(props) {
   // ======================================================
   // database mode 
   // ======================================================
-  /*
+  
   useEffect(() => {
     async function loadFromDB() {
       try {
@@ -34,50 +34,55 @@ export default function PayPage(props) {
         const data = await res.json();
 
         setAuction({
-          id: data.auction.auction_id,
-          name: data.auction.title,
-          currentPrice: Number(data.auction.current_price),
-          shippingPrice: Number(data.auction.shipping_price),
-          expeditedPrice: Number(data.auction.expedited_price),
-          shippingDays: Number(data.auction.shipping_days),
-          winner: data.winner_username,
+          id: data.auction_id,
+          name: data.title,
+          currentPrice: Number(data.current_price) || 0,
+          shippingPrice: Number(data.shipping_price) || 10,
+          expeditedPrice: Number(data.expedited_price) || 15,
+          shippingDays: Number(data.shipping_days) || 5,
         });
       } catch (err) {
         console.error("DB Auction Load Error:", err);
+        alert('Failed to load auction details');
       }
     }
 
     loadFromDB();
   }, [auctionId]);
-  */
+  
+ if (!auction) return <p>Loading...</p>;
+
+  const baseShipping = auction.shippingPrice;
+  const expedited = auction.expeditedPrice;
+  const total = auction.currentPrice + baseShipping + (useExpedited ? expedited : 0);
 
   // ======================================================
   // local storage mode (CURRENT DEMO)
   // ======================================================
-  useEffect(() => {
-    const saved = localStorage.getItem("ddj-items");
-    if (!saved) return;
+  // useEffect(() => {
+  //   const saved = localStorage.getItem("ddj-items");
+  //   if (!saved) return;
 
-    const all = JSON.parse(saved);
-    const found = all.find((x) => String(x.id) === auctionId);
+  //   const all = JSON.parse(saved);
+  //   const found = all.find((x) => String(x.id) === auctionId);
 
-    if (found) setAuction(found);
-  }, [auctionId]);
+  //   if (found) setAuction(found);
+  // }, [auctionId]);
 
-  if (!auction) return <p>Loading...</p>;
+  // if (!auction) return <p>Loading...</p>;
 
-  const baseShipping = Number(auction.shippingPrice) || 0;
-  const expedited = Number(auction.expeditedPrice) || 0;
+  // const baseShipping = Number(auction.shippingPrice) || 0;
+  // const expedited = Number(auction.expeditedPrice) || 0;
 
-  const total =
-    Number(auction.currentPrice) +
-    baseShipping +
-    (useExpedited ? expedited : 0);
+  // const total =
+  //   Number(auction.currentPrice) +
+  //   baseShipping +
+  //   (useExpedited ? expedited : 0);
 
   // ======================================================
   // database payment mode
   // ======================================================
-  /*
+  
   async function payWithDB() {
     try {
       const res = await fetch("/api/payment/pay", {
@@ -87,12 +92,23 @@ export default function PayPage(props) {
           auction_id: auctionId,
           payer_id: user.user_id,
           shipping_address: shippingAddress,
-          expedited: useExpedited ? true : false,
+          expedited: useExpedited,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+
+      sessionStorage.setItem("ddj-receipt", JSON.stringify({
+        id: data.payment.payment_id,
+        auctionId: auction.id,
+        name: auction.name,
+        totalPaid: total,
+        expedited: useExpedited,
+        shippingAddress: shippingAddress,
+        createdAt: Date.now(),
+        shippingDays: auction.shippingDays,
+      }));
 
       router.push(`/item/${auctionId}/receipt`);
     } catch (err) {
@@ -100,36 +116,36 @@ export default function PayPage(props) {
       alert("Payment failed.");
     }
   }
-  */
+  
 
   // ======================================================
   // local storage payment (CURRENT DEMO)
   // ======================================================
-  function payLocal() {
-    // winner check
-    if (!auction.winner && auction.highestBidder !== "You") {
-      alert("You cannot pay for an item you did not win.");
-      return;
-    }
+  // function payLocal() {
+  //   // winner check
+  //   if (!auction.winner && auction.highestBidder !== "You") {
+  //     alert("You cannot pay for an item you did not win.");
+  //     return;
+  //   }
 
-    const receipt = {
-      id: crypto.randomUUID(),
-      auctionId: auction.id,
-      name: auction.name,
-      payer: user.username || "You",
-      totalPaid: total,
-      expedited: useExpedited,
-      shippingAddress: shippingAddress || "123 Default Street",
-      createdAt: Date.now(),
-      shippingDays: auction.shippingDays,
-    };
+  //   const receipt = {
+  //     id: crypto.randomUUID(),
+  //     auctionId: auction.id,
+  //     name: auction.name,
+  //     payer: user.username || "You",
+  //     totalPaid: total,
+  //     expedited: useExpedited,
+  //     shippingAddress: shippingAddress || "123 Default Street",
+  //     createdAt: Date.now(),
+  //     shippingDays: auction.shippingDays,
+  //   };
 
-    // save receipt
-    localStorage.setItem("ddj-receipt", JSON.stringify(receipt));
+  //   // save receipt
+  //   localStorage.setItem("ddj-receipt", JSON.stringify(receipt));
 
-    // redirect
-    window.location.href = `/item/${auctionId}/receipt`;
-  }
+  //   // redirect
+  //   window.location.href = `/item/${auctionId}/receipt`;
+  // }
 
   function handlePayment() {
     if (!card.number || !card.name || !card.expiry || !card.cvv) {
@@ -138,10 +154,10 @@ export default function PayPage(props) {
     }
 
     // LOCAL MODE
-    payLocal();
+    // payLocal();
 
     // DB MODE
-    // payWithDB();
+    payWithDB();
   }
 
   return (

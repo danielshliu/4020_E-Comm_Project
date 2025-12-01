@@ -15,26 +15,41 @@ const USER_SERVICE_URL = "http://localhost:3001/api/user";
 router.get("/auction", async(req,res) => {
     try{
         const response = await fetch(AUCTION_SERVICE_URL);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch from auction service');
+        }
+        
         const data = await response.json();
-
+        
+        console.log('Controller returning auctions:', data); // Debug log
         res.json(data);
     }catch(err){
-        res.status(500).json("Auction Error", {error: err.message});
+        console.error('Controller Auction Error:', err);
+        res.status(500).json({error: err.message}); // Fixed this line
     }
 });
 
 //done
 router.get("/auction/:auction_id", async(req, res) => {
     try {
-        const response = await fetch(`${AUCTION_SERVICE_URL}/${req.params.auction_id}`);
-        if (!response.ok) {
-            throw new Error('Auction not found');
-        }
+        const { auction_id } = req.params;
+        
+        const response = await fetch(`${AUCTION_SERVICE_URL}/${auction_id}`, {
+            method: 'GET',
+            headers: {'Content-Type': 'application/json'}
+        });
+
         const data = await response.json();
+        
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
         res.json(data);
     } catch(err) {
-        console.error('Controller Error:', err);
-        res.status(500).json({ error: err.message });
+        console.error('Controller Get Auction Error:', err);
+        res.status(500).json({error: err.message});
     }
 });
 //done
@@ -193,12 +208,10 @@ router.post('/payments/pay', async (req, res) => {
     }
 });
 
-
-
-//user service
-router.post('/user/signup',async(req,res)=>{
-    try{
-        const response = await fetch(`${USER_SERVICE_URL}/signup`,{
+// Payment service routes
+router.post("/payment/pay", async(req, res) => {
+    try {
+        const response = await fetch(`${PAYMENT_SERVICE_URL}/pay`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(req.body)
@@ -206,8 +219,56 @@ router.post('/user/signup',async(req,res)=>{
 
         const data = await response.json();
         
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
         res.status(201).json(data);
-    }catch(err){
+    } catch(err) {
+        console.error('Controller Payment Error:', err);
+        res.status(500).json({error: err.message});
+    }
+});
+
+router.get("/payment/receipt/:auction_id", async(req, res) => {
+    try {
+        const { auction_id } = req.params;
+        
+        const response = await fetch(`${PAYMENT_SERVICE_URL}/receipt/${auction_id}`, {
+            method: 'GET',
+            headers: {'Content-Type': 'application/json'}
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
+        res.json(data);
+    } catch(err) {
+        console.error('Controller Receipt Error:', err);
+        res.status(500).json({error: err.message});
+    }
+});
+
+//user service
+router.post('/user/signup', async(req, res) => {
+    try {
+        const response = await fetch(`${USER_SERVICE_URL}/signup`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(req.body)
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            return res.status(response.status).json(data);
+        }
+        
+        res.status(201).json(data);
+    } catch(err) {
         console.error('Controller Signup Error:', err);
         res.status(500).json({error: err.message});
     }

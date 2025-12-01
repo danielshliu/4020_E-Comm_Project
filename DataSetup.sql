@@ -1,30 +1,30 @@
 -- USERS
-INSERT INTO users (username, password_hash, email) VALUES
-('alice_seller', '$2b$10$abcdefghijklmnopqrstuv', 'alice@example.com'),
-('bob_buyer', '$2b$10$abcdefghijklmnopqrstuv', 'bob@example.com'),
-('charlie_buyer', '$2b$10$abcdefghijklmnopqrstuv', 'charlie@example.com'),
-('diane_seller', '$2b$10$abcdefghijklmnopqrstuv', 'diane@example.com'),
-('emma_seller', '$2b$10$abcdefghijklmnopqrstuv', 'emma@example.com'),
-('frank_buyer', '$2b$10$abcdefghijklmnopqrstuv', 'frank@example.com');
+INSERT INTO users (username, password_hash, email, first_name, last_name, address) VALUES
+('alice_seller', '$2b$10$abcdefghijklmnopqrstuv', 'alice@example.com', 'Alice', 'Smith', '123 Main St, Toronto, ON, M5H 2N2'),
+('bob_buyer', '$2b$10$abcdefghijklmnopqrstuv', 'bob@example.com', 'Bob', 'Johnson', '456 Oak Ave, Vancouver, BC, V6B 1A1'),
+('charlie_buyer', '$2b$10$abcdefghijklmnopqrstuv', 'charlie@example.com', 'Charlie', 'Williams', '789 Elm St, Montreal, QC, H3B 1A1'),
+('diane_seller', '$2b$10$abcdefghijklmnopqrstuv', 'diane@example.com', 'Diane', 'Brown', '321 Pine Ave, Calgary, AB, T2P 1A1'),
+('emma_seller', '$2b$10$abcdefghijklmnopqrstuv', 'emma@example.com', 'Emma', 'Davis', '654 Maple Rd, Ottawa, ON, K1P 1A1'),
+('frank_buyer', '$2b$10$abcdefghijklmnopqrstuv', 'frank@example.com', 'Frank', 'Miller', '987 Cedar Ln, Halifax, NS, B3H 1A1');
 
 -- ITEMS
 INSERT INTO items (seller_id, title, description, image_url) VALUES
-(1, 'Vintage Clock', 'Antique wooden clock from 1920s', 'https://example.com/clock.jpg'),
-(4, 'Art Painting', 'Modern abstract canvas painting', 'https://example.com/painting.jpg'),
-(1, 'Laptop', 'Lightly used MacBook Air 2020', 'https://example.com/laptop.jpg'),
-(5, 'Designer Watch', 'Luxury Swiss watch, brand new', 'https://example.com/watch.jpg'),
-(4, 'Vintage Camera', 'Rare 1960s film camera in excellent condition', 'https://example.com/camera.jpg'),
-(5, 'Gaming Console', 'PS5 with 2 controllers and 3 games', 'https://example.com/ps5.jpg');
+(1, 'Vintage Clock', 'Antique wooden clock from 1920s', 'https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=400'),
+(4, 'Art Painting', 'Modern abstract canvas painting', 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400'),
+(1, 'Laptop', 'Lightly used MacBook Air 2020', 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400'),
+(5, 'Designer Watch', 'Luxury Swiss watch, brand new', 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=400'),
+(4, 'Vintage Camera', 'Rare 1960s film camera in excellent condition', 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400'),
+(5, 'Gaming Console', 'PS5 with 2 controllers and 3 games', 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400');
 
--- AUCTIONS
-INSERT INTO auctions (item_id, seller_id, auction_type, start_price, current_price, end_time)
+-- AUCTIONS (with shipping info and winner_id)
+INSERT INTO auctions (item_id, seller_id, winner_id, auction_type, start_price, current_price, end_time, shipping_price, expedited_price, shipping_days)
 VALUES 
-(1, 1, 'FORWARD', 100, 120, '2025-11-01 18:00:00'),  -- Vintage Clock
-(2, 4, 'DUTCH', 500, 500, '2025-11-05 20:00:00'),   -- Art Painting
-(3, 1, 'FORWARD', 600, 650, '2025-11-03 19:30:00'), -- Laptop
-(4, 5, 'DUTCH', 2000, 2000, '2025-11-10 15:00:00'), -- Designer Watch
-(5, 4, 'DUTCH', 800, 800, '2025-11-08 12:00:00'),   -- Vintage Camera
-(6, 5, 'DUTCH', 600, 600, '2025-11-12 18:00:00');   -- Gaming Console
+(1, 1, NULL, 'FORWARD', 100, 120, '2025-12-10 18:00:00', 10, 15, 5),  -- Vintage Clock - won by Charlie
+(2, 4, NULL, 'DUTCH', 500, 500, '2025-12-15 20:00:00', 15, 20, 7),    -- Art Painting - won by Charlie
+(3, 1, NULL, 'FORWARD', 600, 650, '2025-12-12 19:30:00', 12, 18, 5),  -- Laptop - still active
+(4, 5, NULL, 'DUTCH', 2000, 2000, '2025-12-20 15:00:00', 20, 30, 10), -- Designer Watch - won by Charlie
+(5, 4, NULL, 'DUTCH', 800, 800, '2025-12-18 12:00:00', 15, 22, 7),    -- Vintage Camera - won by Frank
+(6, 5, NULL, 'DUTCH', 600, 600, '2025-12-22 18:00:00', 10, 15, 5);    -- Gaming Console - won by Frank
 
 -- FORWARD_AUCTIONS
 INSERT INTO forward_auctions (auction_id, min_increment, reserve_price) VALUES
@@ -37,7 +37,7 @@ INSERT INTO dutch_auctions (auction_id, price_drop_step, step_interval_sec) VALU
 (4, 100, 300),  -- Designer Watch: drops $100 every 5 minutes
 (5, 50, 120),   -- Vintage Camera: drops $50 every 2 minutes
 (6, 30, 180);   -- Gaming Console: drops $30 every 3 minutes
-
+ 
 -- BIDS
 INSERT INTO bids (auction_id, bidder_id, amount) VALUES
 (1, 2, 110),
@@ -65,24 +65,24 @@ INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price, accepted) VALUE
 (6, 2, 570, false),  -- Bob rejected at $570
 (6, 6, 540, true);   -- Frank accepted at $540
 
--- PAYMENTS
-INSERT INTO payments (auction_id, payer_id, shipping_address, payment_status) VALUES
-(1, 3, '123 Maple St, Toronto, ON', 'COMPLETED'),
-(2, 3, '45 Queen St, Ottawa, ON', 'COMPLETED'),
-(3, 2, '789 Elm St, Vancouver, BC', 'PENDING'),
-(4, 3, '45 Queen St, Ottawa, ON', 'COMPLETED'),
-(5, 6, '321 Pine Ave, Montreal, QC', 'PENDING'),
-(6, 6, '321 Pine Ave, Montreal, QC', 'PENDING');
+-- PAYMENTS (with expedited column)
+INSERT INTO payments (auction_id, payer_id, shipping_address, expedited, payment_status) VALUES
+(1, 3, '789 Elm St, Montreal, QC, H3B 1A1', false, 'COMPLETED'),
+(2, 3, '789 Elm St, Montreal, QC, H3B 1A1', true, 'COMPLETED'),
+(3, 2, '456 Oak Ave, Vancouver, BC, V6B 1A1', false, 'PENDING'),
+(4, 3, '789 Elm St, Montreal, QC, H3B 1A1', true, 'COMPLETED'),
+(5, 6, '987 Cedar Ln, Halifax, NS, B3H 1A1', false, 'PENDING'),
+(6, 6, '987 Cedar Ln, Halifax, NS, B3H 1A1', true, 'PENDING');
 
 
 -- View all auctions with item and seller info
-SELECT a.auction_id, i.title, u.username AS seller, a.auction_type, a.start_price, a.current_price
+SELECT a.auction_id, i.title, u.username AS seller, a.auction_type, a.start_price, a.current_price, a.shipping_price, a.expedited_price, a.winner_id
 FROM auctions a
 JOIN items i ON a.item_id = i.item_id
 JOIN users u ON a.seller_id = u.user_id;
 
 -- View all payments with buyer and item info
-SELECT p.payment_id, u.username AS buyer, i.title AS item, p.shipping_address, p.created_at
+SELECT p.payment_id, u.username AS buyer, i.title AS item, p.shipping_address, p.expedited, p.payment_status, p.created_at
 FROM payments p
 JOIN auctions a ON p.auction_id = a.auction_id
 JOIN items i ON a.item_id = i.item_id
