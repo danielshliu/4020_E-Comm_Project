@@ -14,48 +14,74 @@ export default function ItemPage(props) {
   const [auction, setAuction] = useState(null);
   const [userBid, setUserBid] = useState("");
   const [hasEnded, setHasEnded] = useState(false);
+  const [timeDisplay, setTimeDisplay] = useState("");
 
   function calculateRemaining(endTime) {
     const end = new Date(endTime);
     const now = new Date();
     const diff = end - now;
-    if (diff <= 0) return 0;
-    return Math.floor(diff / (1000 * 60 * 60));
+
+    if (diff <= 0) {
+      return { total: 0, display: "Ended" };
+    }
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    let display = "";
+    if (hours > 0) {
+      display = `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      display = `${minutes}m ${seconds}s`;
+    } else {
+      display = `${seconds}s`;
+    }
+
+    return { total: diff, display };
   }
 
   useEffect(() => {
-    // ======================================================
-    // database version
-    // ======================================================
-    
     async function loadFromDB() {
-      const res = await fetch(`/api/controller/auction/${auctionId}`);
-      const data = await res.json();
+      try {
+        const res = await fetch(`/api/controller/auction/${auctionId}`);
 
-      const timeLeft = calculateRemaining(data.auction.end_time);
+        if (!res.ok) throw new Error('Failed to load auction');
 
-      setAuction({
-        id: data.auction.auction_id,
-        name: data.auction.title,
-        description: data.auction.description,
-        image: data.auction.image_url,
-        auctionType: data.auction.auction_type === "FORWARD" ? "Forward" : "Dutch",
-        currentPrice: Number(data.auction.current_price),
-        highestBidder: data.bids.length ? data.bids[0].bidder_username : "None",
-        remainingTime: timeLeft,
-        shippingPrice: Number(data.auction.shipping_price),
-        expeditedPrice: Number(data.auction.expedited_price),
-        shippingDays: Number(data.auction.shipping_days),
-        winner: data.winner_username,
-      });
+        const data = await res.json();
 
-      if (timeLeft <= 0 || data.winner_username) {
-        setHasEnded(true);
+        console.log('Auction data:', data); // Debug log
+
+        const timeLeft = calculateRemaining(data.end_time);
+
+        setAuction({
+          id: data.auction_id,
+          name: data.title,
+          description: data.description,
+          image: data.image_url,
+          auctionType: data.auction_type === "FORWARD" ? "Forward" : "Dutch",
+          currentPrice: Number(data.current_price),
+          highestBidder: data.bids && data.bids.length ? data.bids[0].bidder_username : "None",
+          endTime: data.end_time, // Store end_time for live updates
+          shippingPrice: Number(data.shipping_price || 10),
+          expeditedPrice: Number(data.expedited_price || 15),
+          shippingDays: Number(data.shipping_days || 5),
+          winner: data.winner_username,
+        });
+
+        setTimeDisplay(timeLeft.display);
+
+        if (timeLeft.total <= 0 || data.winner_username) {
+          setHasEnded(true);
+        }
+      } catch (err) {
+        console.error('Load auction error:', err);
+        alert('Failed to load auction details');
       }
     }
 
     loadFromDB();
-  
+
 
     // ======================================================
     // local storage version
@@ -81,11 +107,33 @@ export default function ItemPage(props) {
     // }
   }, [auctionId]);
 
+  // Update timer every second
+  useEffect(() => {
+    if (!auction || hasEnded) return;
+
+    const interval = setInterval(() => {
+      const timeLeft = calculateRemaining(auction.endTime);
+      setTimeDisplay(timeLeft.display);
+
+      if (timeLeft.total <= 0) {
+        setHasEnded(true);
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [auction, hasEnded]);
+
   // ======================================================
   // forward auction: place bid
   // ======================================================
-  function submitBid() {
+  async function submitBid() {
     if (!auction) return;
+
+    if (hasEnded) {
+      alert("This auction has ended.");
+      return;
+    }
 
     const newBid = Number(userBid);
 
@@ -94,39 +142,108 @@ export default function ItemPage(props) {
       return;
     }
 
-    const saved = JSON.parse(localStorage.getItem("ddj-items"));
-    const index = saved.findIndex((x) => String(x.id) === auctionId);
+    // Get logged in user
+    const user = JSON.parse(sessionStorage.getItem("ddj-user") || "{}");
 
-    saved[index].currentPrice = newBid;
-    saved[index].highestBidder = "You";
+    if (!user || !user.user_id) {
+      alert("You must be logged in to place a bid.");
+      router.push("/signin");
+      return;
+    }
 
-    localStorage.setItem("ddj-items", JSON.stringify(saved));
+    try {
+      console.log('Submitting bid:', {
+        auction_id: auctionId,
+        bidder_id: user.user_id,
+        amount: newBid,
+      });
 
-    setAuction({
-      ...auction,
-      currentPrice: newBid,
-      highestBidder: "You",
-    });
+    
+      const res = await fetch("/api/auction/bid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auction_id: auctionId,
+          bidder_id: user.user_id,
+          amount: newBid,
+        }),
+      });
 
-    setUserBid("");
-    alert("Bid placed!");
+      const data = await res.json();
+
+      console.log('Bid response:', { ok: res.ok, status: res.status, data }); // Debug log
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to place bid");
+      }
+
+      setUserBid("");
+      alert("Bid placed successfully!");
+
+      // Reload auction data from server to get updated highest bidder
+      const reloadRes = await fetch(`/api/controller/auction/${auctionId}`);
+      if (reloadRes.ok) {
+        const reloadData = await reloadRes.json();
+
+        setAuction(prev => ({
+          ...prev,
+          currentPrice: Number(reloadData.current_price),
+          highestBidder: reloadData.bids && reloadData.bids.length 
+            ? reloadData.bids[0].bidder_username 
+            : "None",
+        }));
+      }
+    } catch (err) {
+      console.error("Bid error:", err);
+      alert("Failed to place bid: " + err.message);
+    }
   }
 
   // ======================================================
   // dutch auction: buy now
   // ======================================================
-  function buyNow() {
-    alert(`You bought this item for $${auction.currentPrice}!`);
+  async function buyNow() {
+    if (hasEnded) {
+      alert("This auction has ended.");
+      return;
+    }
 
-    const saved = JSON.parse(localStorage.getItem("ddj-items"));
-    const index = saved.findIndex((x) => String(x.id) === auctionId);
+    // Get logged in user
+    const user = JSON.parse(sessionStorage.getItem("ddj-user") || "{}");
 
-    saved[index].winner = "You";
-    saved[index].remainingTime = 0;
+    if (!user || !user.user_id) {
+      alert("You must be logged in to buy.");
+      router.push("/signin");
+      return;
+    }
 
-    localStorage.setItem("ddj-items", JSON.stringify(saved));
+    try {
 
-    setHasEnded(true);
+      const res = await fetch("/api/auction/buy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auction_id: auctionId,
+          buyer_id: user.user_id,
+          accepted_price: auction.currentPrice,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to buy item");
+      }
+
+      alert(`You bought this item for $${auction.currentPrice}!`);
+      setHasEnded(true);
+
+      // Redirect to payment
+      router.push(`/item/${auctionId}/pay`);
+    } catch (err) {
+      console.error("Buy error:", err);
+      alert("Failed to buy item: " + err.message);
+    }
   }
 
   if (!auction) return <p>Loading...</p>;
@@ -154,7 +271,7 @@ export default function ItemPage(props) {
               <p>Highest Bidder: {auction.highestBidder}</p>
 
               <p className={styles.time}>
-                Time Left: {auction.remainingTime} hours
+                Time Left: {timeDisplay}
               </p>
 
               <input
@@ -175,7 +292,7 @@ export default function ItemPage(props) {
           {auction.auctionType === "Dutch" && (
             <>
               <p className={styles.time}>
-                Time Left: {auction.remainingTime} hours
+                Time Left: {timeDisplay}
               </p>
 
               <button className={styles.buyBtn} onClick={buyNow}>
