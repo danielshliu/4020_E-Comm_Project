@@ -180,4 +180,40 @@ router.post("/forgot-password", async (req, res) => {
 });
 
 
+router.post('/resetpassword', async(req,res)=>{
+  try{
+    const {email, resetCode, newPassword} = req.body;
+
+    const result = await db.query(
+      `SELECT user_id FROM users
+      WHERE email = $1
+      AND reset_token = $2
+      AND reset_token_expires > NOW()`,
+      [email, resetCode]
+    );
+
+    if(result.rows.length === 0){
+      return res.status(400).json({error: 'error code bad'});
+    }
+
+    //newPassword hashed.
+
+    const password_hash = await bcrypt.hash(newPassword,10);
+    await db.query(
+      `UPDATE users
+      SET password_hash = $1,
+          reset_token = NULL,
+          reset_token_expires = NULL
+      WHERE user_id = $2`,
+      [password_hash, result.rows[0].user_id]
+    );
+
+    res.json({message: 'Password Resetted'});
+
+  }catch(err){
+    console.error('Reset Pass Err', err);
+    res.status(500).json({error: err.message});
+  }
+});
+
 export default router;
