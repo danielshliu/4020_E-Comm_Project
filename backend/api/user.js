@@ -103,7 +103,7 @@ router.post('/forgetpassword', async(req,res)=>{
     const {email} = req.body
 
     //yeah i did not know how to do this but okay cool thanks
-    const resetCode = Math.floor(10000 + Math.random()*900000);
+    const resetCode = Math.floor(100000 + Math.random() * 900000);
     const resetCodeExpires = new Date(Date.now()+3600000);
 
     // console.log("ResetCode is:",resetCode);
@@ -140,45 +140,6 @@ router.post('/forgetpassword', async(req,res)=>{
     res.status(500).json({error: err.message});
   }
 });
-
-//this part is after forgetpass after u get the code
-//Reset POST function
-router.post("/forgot-password", async (req, res) => {
-  try {
-    const { email, newPassword } = req.body;
-
-    if (!email || !newPassword) {
-      return res
-        .status(400)
-        .json({ error: "Email and new password are required." });
-    }
-
-    const password_hash = await bcrypt.hash(newPassword, 10);
-
-    const result = await db.query(
-      `
-      UPDATE users
-      SET password_hash = $1
-      WHERE email = $2
-      RETURNING user_id, username, email;
-      `,
-      [password_hash, email]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "No user found with that email." });
-    }
-
-    return res.status(200).json({
-      message: "Password updated successfully.",
-      user: result.rows[0],
-    });
-  } catch (err) {
-    console.error("Forgot password error:", err);
-    return res.status(500).json({ error: "Internal server error." });
-  }
-});
-
 
 router.post('/resetpassword', async(req,res)=>{
   try{
