@@ -158,7 +158,7 @@ export default function ItemPage(props) {
         amount: newBid,
       });
 
-      const res = await fetch("/api/controller/auction/bid", {
+      const res = await fetch("/api/auction/bid", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -217,7 +217,7 @@ export default function ItemPage(props) {
     }
 
     try {
-      const res = await fetch("/api/controller/auction/buy", {
+      const res = await fetch("/api/auction/buy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -9,8 +9,8 @@ export default function SignUpPage() {
 
   const [form, setForm] = useState({
     username: "",
-    password: "",
     email: "",
+    password: "",
     firstName: "",
     lastName: "",
     street: "",
@@ -63,7 +63,7 @@ export default function SignUpPage() {
   
   async function signupDB() {
     try {
-      const res = await fetch("/api/controller/user/signup", {
+      const res = await fetch("/api/user/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

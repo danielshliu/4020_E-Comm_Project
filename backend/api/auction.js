@@ -91,8 +91,7 @@ router.get('/:auction_id', async (req, res) => {
 
 // Forward Auction Bidding
 router.post('/bid', async(req, res) => {
-    const { auction_id } = req.params;
-    const { bidder_id, amount } = req.body;
+    const { auction_id, bidder_id, amount } = req.body;
     
     if (!bidder_id || !amount) {
         return res.status(400).json({ error: 'bidder_id and amount are required' });
@@ -100,7 +99,7 @@ router.post('/bid', async(req, res) => {
     
     try {
         await db.query('BEGIN');
-        
+        console.log(auction_id)
         // Get auction details and lock the row
         const auctionQuery = await db.query(`
             SELECT a.*, fa.min_increment
@@ -110,6 +109,7 @@ router.post('/bid', async(req, res) => {
             FOR UPDATE
         `, [auction_id]);
 
+        //console.log(auctionQuery)
         
         if (!auctionQuery.rows.length) {
             throw new Error("Auction not found or not active");
@@ -157,9 +157,8 @@ router.post('/bid', async(req, res) => {
 });
 
 // Dutch Auction Buy Now - SIMPLIFIED
-router.post('/:auction_id/buy', async(req, res) => {
-    const { auction_id } = req.params;
-    const { buyer_id, accepted_price } = req.body;
+router.post('/buy', async(req, res) => {
+    const { auction_id, buyer_id, accepted_price } = req.body;
 
     if (!buyer_id) {
         return res.status(400).json({ error: 'buyer_id is required' });
@@ -196,9 +195,9 @@ router.post('/:auction_id/buy', async(req, res) => {
         await db.query(`
             INSERT INTO dutch_accepts (auction_id, buyer_id, accepted_price, accepted)
             VALUES ($1, $2, $3, true)
-        `, [auction_id, buyer_id, accepted_price || auction.current_price]);
+        `, [auction_id, buyer_id, accepted_price]);
 
-
+        const accept = true
         //If the buyer accpets the order and confirms it then, item is purchased
         if(accept){
             await db.query(`

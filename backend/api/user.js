@@ -6,8 +6,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const router = express();
-router.use(express.json());
+const router = express.Router();
 
 //Transpoder for email sending
 const transporter = nodemailer.createTransport({
@@ -33,9 +32,16 @@ const transporter = nodemailer.createTransport({
 
 
 //Sign up POST function
-router.post('/signup',async(req, res)=>{
+router.post("/signup", async (req, res) => {
   try{
     const{username, password, email, firstName, lastName, street, number, city, country, postal} = req.body;
+
+    // Basic validation
+    if (!username || !email || !password) {
+      return res
+        .status(400)
+        .json({ error: "Username, email, and password are required." });
+    }
 
     //hash the password
     const password_hash = await bcrypt.hash(password,10);
@@ -137,40 +143,41 @@ router.post('/forgetpassword', async(req,res)=>{
 
 //this part is after forgetpass after u get the code
 //Reset POST function
-router.post('/resetpassword', async(req,res)=>{
-  try{
-    const {email, resetCode, newPassword} = req.body;
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
 
-    const result = await db.query(
-      `SELECT user_id FROM users
-      WHERE email = $1
-      AND reset_token = $2
-      AND reset_token_expires > NOW()`,
-      [email, resetCode]
-    );
-
-    if(result.rows.length === 0){
-      return res.status(400).json({error: 'error code bad'});
+    if (!email || !newPassword) {
+      return res
+        .status(400)
+        .json({ error: "Email and new password are required." });
     }
 
-    //newPassword hashed.
+    const password_hash = await bcrypt.hash(newPassword, 10);
 
-    const password_hash = await bcrypt.hash(newPassword,10);
-    await db.query(
-      `UPDATE users
-      SET password_hash = $1,
-          reset_token = NULL,
-          reset_token_expires = NULL
-      WHERE user_id = $2`,
-      [password_hash, result.rows[0].user_id]
+    const result = await db.query(
+      `
+      UPDATE users
+      SET password_hash = $1
+      WHERE email = $2
+      RETURNING user_id, username, email;
+      `,
+      [password_hash, email]
     );
 
-    res.json({message: 'Password Resetted'});
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "No user found with that email." });
+    }
 
-  }catch(err){
-    console.error('Reset Pass Err', err);
-    res.status(500).json({error: err.message});
+    return res.status(200).json({
+      message: "Password updated successfully.",
+      user: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
+
 
 export default router;

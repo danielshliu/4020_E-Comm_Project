@@ -106,6 +106,10 @@ export default function SignInPage() {
           Don’t have an account? <a href="/signup">Create one</a>
         </p>
 
+        <p className={styles.switch}>
+          Forgot your password? <a href="/forgot-password">Reset it</a>
+        </p>
+
         <div className={styles.divider}>or</div>
 
         <button className={styles.adminBtn} onClick={adminLogin}>
