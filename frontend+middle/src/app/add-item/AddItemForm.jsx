@@ -125,6 +125,8 @@ export default function AddItemForm() {
 
       const item_id = itemData.item_id;
 
+      console.log("PLEASE FIX", form.remainingTime)
+
       // 2️ Compute auction end time
       const endTime = new Date(Date.now() + Number(form.remainingTime) * 3600000)
         .toISOString();

@@ -230,15 +230,22 @@ router.put('/catalogue/:item_id/price', async (req, res) => {
 router.post('/payments/pay', async (req, res) => {
     try {
         const response = await fetch(`${PAYMENT_SERVICE_URL}/pay`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(req.body)
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(req.body)
         });
+    
         const data = await response.json();
-        res.json(data);
-    } catch (error) {
-        res.status(500).json(handleServiceError(error, 'Payment'));
-    }
+        
+        if (!response.ok) {
+          return res.status(response.status).json(data);
+        }
+        
+        res.status(201).json(data);
+      } catch(err) {
+        console.error('Controller Payment Error:', err);
+        res.status(500).json({error: err.message});
+      }
 });
 
 // Payment service routes
@@ -399,6 +406,35 @@ router.post('/auction/create', async (req, res) => {
     }
 });
 
+// DECLINE forward auction winner
+router.post("/auction/decline", async (req, res) => {
+    try {
+        const { auction_id, user_id } = req.body;
+    
+        if (!auction_id || !user_id) {
+          return res
+            .status(400)
+            .json({ error: "auction_id and user_id are required" });
+        }
+    
+        const response = await fetch(`${AUCTION_SERVICE_URL}/${auction_id}/decline`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id }),
+        });
+    
+        const data = await response.json();
+    
+        if (!response.ok) {
+          return res.status(response.status).json(data);
+        }
+    
+        res.json(data);
+      } catch (err) {
+        console.error("Controller Decline Error:", err);
+        res.status(500).json({ error: err.message });
+      }
+});
 
 
 export default router;

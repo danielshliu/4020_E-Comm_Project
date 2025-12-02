@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
 // Get specific auction details with item info and bids
 router.get('/:auction_id', async (req, res) => {
     try {
-        const { auction_id } = req.params;
+        const { auction_id} = req.params;
         
         console.log('Fetching auction:', auction_id); // Debug log
         
@@ -277,6 +277,7 @@ router.post('/create', async (req, res) => {
             shipping_days
         } = req.body;
 
+        console.log("ENDING", end_time)
         console.log('Creating auction:', req.body); // Debug
 
         if (!item_id || !seller_id || !auction_type || !start_price || !end_time) {
@@ -320,9 +321,9 @@ router.post('/create', async (req, res) => {
             );
         } else if (auction_type === 'DUTCH') {
             await db.query(
-                `INSERT INTO dutch_auctions (auction_id, price_drop_step, step_interval_sec) 
-                 VALUES ($1, $2, $3)`,
-                [auction.auction_id, price_drop_step || 10, step_interval_sec || 60]
+                `INSERT INTO dutch_auctions (auction_id, price_drop_step, step_interval_sec, reserve_price) 
+                 VALUES ($1, $2, $3, $4)`,
+                [auction.auction_id, price_drop_step || 10, step_interval_sec || 60, reserve_price]
             );
         }
 
@@ -335,5 +336,155 @@ router.post('/create', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// Winner declines forward auction → offer to next highest bidder or clear winner
+router.post("/decline", async (req, res) => {
+    const { auction_id, user_id} = req.body;
+  
+    try {
+        // 1) Load auction info (to get type + start_price + end_time)
+        const aRes = await db.query(
+          `
+          SELECT auction_type, start_price, end_time
+          FROM auctions
+          WHERE auction_id = $1
+          `,
+          [auction_id]
+        );
+    
+        if (aRes.rowCount === 0) {
+          return res.status(404).json({ error: "Auction not found" });
+        }
+    
+        const auction = aRes.rows[0];
+    
+        if (auction.auction_type !== "FORWARD") {
+          return res
+            .status(400)
+            .json({ error: "Decline is only supported for forward auctions." });
+        }
+    
+        // Optional: require that the auction has already ended
+        const now = new Date();
+        const endTime = new Date(auction.end_time);
+        if (now < endTime) {
+          return res
+            .status(400)
+            .json({ error: "Auction has not ended yet; cannot decline." });
+        }
+    
+        // 2) Get all bids for this auction, highest first
+        const bidsRes = await db.query(
+          `
+          SELECT b.bid_id,
+                 b.bidder_id,
+                 b.amount,
+                 b.created_at,
+                 u.username
+          FROM bids b
+          JOIN users u ON u.user_id = b.bidder_id
+          WHERE b.auction_id = $1
+          ORDER BY b.amount DESC, b.created_at ASC
+          `,
+          [auction_id]
+        );
+    
+        if (bidsRes.rowCount === 0) {
+          // No bids at all → nothing to decline, just ensure price is at start_price
+          await db.query(
+            `
+            UPDATE auctions
+            SET current_price = start_price
+            WHERE auction_id = $1
+            `,
+            [auction_id]
+          );
+    
+          return res.json({
+            message:
+              "There were no bids to decline. Auction remains with no bids and start price.",
+            new_highest_bidder: null,
+            new_price: auction.start_price,
+          });
+        }
+    
+        const topBid = bidsRes.rows[0];
+    
+        // 3) Only the current highest bidder can decline
+        if (topBid.bidder_id !== Number(user_id)) {
+          return res.status(403).json({
+            error: "Only the current highest bidder can decline this auction.",
+          });
+        }
+    
+        // 4) Delete all bids from this highest bidder for this auction
+        await db.query(
+          `
+          DELETE FROM bids
+          WHERE auction_id = $1
+            AND bidder_id = $2
+          `,
+          [auction_id, user_id]
+        );
+    
+        // 5) Recalculate highest bid after deletion
+        const newBidsRes = await db.query(
+          `
+          SELECT b.bid_id,
+                 b.bidder_id,
+                 b.amount,
+                 b.created_at,
+                 u.username
+          FROM bids b
+          JOIN users u ON u.user_id = b.bidder_id
+          WHERE b.auction_id = $1
+          ORDER BY b.amount DESC, b.created_at ASC
+          `,
+          [auction_id]
+        );
+    
+        if (newBidsRes.rowCount === 0) {
+          // No more bids left → set price back to start and no effective winner
+          await db.query(
+            `
+            UPDATE auctions
+            SET current_price = start_price
+            WHERE auction_id = $1
+            `,
+            [auction_id]
+          );
+    
+          return res.json({
+            message:
+              "You declined and there are no other bids. Auction now has no highest bidder.",
+            new_highest_bidder: null,
+            new_price: auction.start_price,
+          });
+        }
+    
+        const newTop = newBidsRes.rows[0];
+    
+        // 6) Update auction current_price to the new highest bid
+        await db.query(
+          `
+          UPDATE auctions
+          SET current_price = $1
+          WHERE auction_id = $2
+          `,
+          [newTop.amount, auction_id]
+        );
+    
+        return res.json({
+          message: `You declined. The auction is now led by ${newTop.username} at ${newTop.amount}.`,
+          new_highest_bidder: newTop.username,
+          new_price: newTop.amount,
+        });
+      } catch (err) {
+        console.error("Auction Decline Error:", err);
+        res.status(500).json({ error: err.message });
+      }
+    });
+    
+  
 
 export default router;

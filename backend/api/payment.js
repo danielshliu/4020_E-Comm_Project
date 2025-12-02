@@ -31,11 +31,21 @@ router.post('/pay', async (req, res) => {
            [auction_id, payer_id, shipping_address, expedited || false]
         );
 
+        await db.query(
+            `
+            UPDATE auctions
+            SET winner_id = $1
+            WHERE auction_id = $2
+            `,
+            [payer_id, auction_id]
+          );
+
         res.status(201).json({
             message: "Payment successful",
             payment: result.rows[0],
             total: totalAmount
         });
+        
 
     } catch(err){
         console.log("Payment API error", err);

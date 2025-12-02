@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styles from "./Item.module.css"; 
+import styles from "./Item.module.css";
 
 export default function ItemPage(props) {
   const { id } = use(props.params);
@@ -15,6 +15,18 @@ export default function ItemPage(props) {
   const [userBid, setUserBid] = useState("");
   const [hasEnded, setHasEnded] = useState(false);
   const [timeDisplay, setTimeDisplay] = useState("");
+
+  // NEW: current logged-in user
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Load current user from sessionStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = sessionStorage.getItem("ddj-user");
+    if (stored) {
+      setCurrentUser(JSON.parse(stored));
+    }
+  }, []);
 
   function calculateRemaining(endTime) {
     const end = new Date(endTime);
@@ -46,14 +58,13 @@ export default function ItemPage(props) {
       try {
         const res = await fetch(`/api/controller/auction/${auctionId}`);
 
-        if (!res.ok) throw new Error('Failed to load auction');
+        if (!res.ok) throw new Error("Failed to load auction");
 
         const data = await res.json();
 
-        console.log('Auction data:', data); // Debug log
-
         const timeLeft = calculateRemaining(data.end_time);
 
+        // data is assumed to be the flat auction object, with optional data.bids[]
         setAuction({
           id: data.auction_id,
           name: data.title,
@@ -61,50 +72,31 @@ export default function ItemPage(props) {
           image: data.image_url,
           auctionType: data.auction_type === "FORWARD" ? "Forward" : "Dutch",
           currentPrice: Number(data.current_price),
-          highestBidder: data.bids && data.bids.length ? data.bids[0].bidder_username : "None",
-          endTime: data.end_time, // Store end_time for live updates
+          highestBidder:
+            data.bids && data.bids.length
+              ? data.bids[0].bidder_username
+              : "None",
+          endTime: data.end_time,
           shippingPrice: Number(data.shipping_price || 10),
           expeditedPrice: Number(data.expedited_price || 15),
           shippingDays: Number(data.shipping_days || 5),
-          winner: data.winner_username,
+
+          // NEW: store winner_id from backend
+          winnerId: data.winner_id ?? null,
         });
 
         setTimeDisplay(timeLeft.display);
 
-        if (timeLeft.total <= 0 || data.winner_username) {
+        if (timeLeft.total <= 0 || data.winner_id) {
           setHasEnded(true);
         }
       } catch (err) {
-        console.error('Load auction error:', err);
-        alert('Failed to load auction details');
+        console.error("Load auction error:", err);
+        alert("Failed to load auction details");
       }
     }
 
     loadFromDB();
-
-
-    // ======================================================
-    // local storage version
-    // ======================================================
-    // const saved = localStorage.getItem("ddj-items");
-    // if (!saved) return;
-
-    // const all = JSON.parse(saved);
-    // const found = all.find((x) => String(x.id) === auctionId);
-
-    // if (found) {
-    //   const timeLeft = Number(found.remainingTime);
-
-    //   setAuction({
-    //     ...found,
-    //     currentPrice: Number(found.currentPrice),
-    //     shippingPrice: Number(found.shippingPrice),
-    //     expeditedPrice: Number(found.expeditedPrice),
-    //     shippingDays: Number(found.shippingDays),
-    //   });
-
-    //   if (timeLeft <= 0 || found.winner) setHasEnded(true);
-    // }
   }, [auctionId]);
 
   // Update timer every second
@@ -152,13 +144,12 @@ export default function ItemPage(props) {
     }
 
     try {
-      console.log('Submitting bid:', {
+      console.log("Submitting bid:", {
         auction_id: auctionId,
         bidder_id: user.user_id,
         amount: newBid,
       });
 
-    
       const res = await fetch("/api/auction/bid", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,7 +162,7 @@ export default function ItemPage(props) {
 
       const data = await res.json();
 
-      console.log('Bid response:', { ok: res.ok, status: res.status, data }); // Debug log
+      console.log("Bid response:", { ok: res.ok, status: res.status, data });
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to place bid");
@@ -185,17 +176,83 @@ export default function ItemPage(props) {
       if (reloadRes.ok) {
         const reloadData = await reloadRes.json();
 
-        setAuction(prev => ({
+        const reloadHighest =
+          reloadData.bids && reloadData.bids.length
+            ? reloadData.bids[0].bidder_username
+            : "None";
+
+        setAuction((prev) => ({
           ...prev,
           currentPrice: Number(reloadData.current_price),
-          highestBidder: reloadData.bids && reloadData.bids.length 
-            ? reloadData.bids[0].bidder_username 
-            : "None",
+          highestBidder: reloadHighest,
+          winnerId: reloadData.winner_id ?? prev.winnerId,
         }));
       }
     } catch (err) {
       console.error("Bid error:", err);
       alert("Failed to place bid: " + err.message);
+    }
+  }
+
+
+  async function declinePurchase() {
+    if (!auction) return;
+  
+    if (!currentUser || !currentUser.user_id) {
+      alert("You must be logged in.");
+      router.push("/signin");
+      return;
+    }
+  
+    try {
+      const res = await fetch("/api/controller/auction/decline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auction_id: auctionId,
+          user_id: currentUser.user_id,
+        }),
+      });
+  
+      const data = await res.json();
+  
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to decline purchase");
+      }
+  
+      alert(data.message || "You declined the purchase.");
+  
+      // Reload auction to reflect new winner + lowered price
+      const reloadRes = await fetch(`/api/controller/auction/${auctionId}`);
+      if (reloadRes.ok) {
+        const reloadData = await reloadRes.json();
+        const timeLeft = calculateRemaining(reloadData.end_time);
+  
+        setAuction({
+          id: reloadData.auction_id,
+          name: reloadData.title,
+          description: reloadData.description,
+          image: reloadData.image_url,
+          auctionType:
+            reloadData.auction_type === "FORWARD" ? "Forward" : "Dutch",
+          currentPrice: Number(reloadData.current_price),
+          highestBidder:
+            reloadData.bids && reloadData.bids.length
+              ? reloadData.bids[0].bidder_username
+              : "None",
+          endTime: reloadData.end_time,
+          shippingPrice: Number(reloadData.shipping_price || 10),
+          expeditedPrice: Number(reloadData.expedited_price || 15),
+          shippingDays: Number(reloadData.shipping_days || 5),
+          winnerId: reloadData.winner_id ?? null,
+        });
+  
+        setTimeDisplay(timeLeft.display);
+        setHasEnded(timeLeft.total <= 0 || !!reloadData.winner_id);
+      }
+    } catch (err) {
+      console.error("Decline error:", err);
+      alert("Failed to decline: " + err.message);
     }
   }
 
@@ -218,7 +275,6 @@ export default function ItemPage(props) {
     }
 
     try {
-
       const res = await fetch("/api/auction/buy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -238,7 +294,6 @@ export default function ItemPage(props) {
       alert(`You bought this item for $${auction.currentPrice}!`);
       setHasEnded(true);
 
-      // Redirect to payment
       router.push(`/item/${auctionId}/pay`);
     } catch (err) {
       console.error("Buy error:", err);
@@ -246,14 +301,87 @@ export default function ItemPage(props) {
     }
   }
 
+  async function declinePurchase() {
+    if (!auction) return;
+  
+    // must be logged in
+    if (!currentUser || !currentUser.user_id) {
+      alert("You must be logged in.");
+      router.push("/signin");
+      return;
+    }
+  
+    try {
+      const res = await fetch("/api/auction/decline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auction_id: auctionId,
+          user_id: currentUser.user_id,
+        }),
+      });
+  
+      const data = await res.json();
+  
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to decline purchase");
+      }
+  
+      alert(data.message || "You declined the purchase.");
+  
+      // Reload auction to reflect new winner (2nd highest bidder or none)
+      const reloadRes = await fetch(`/api/controller/auction/${auctionId}`);
+      if (reloadRes.ok) {
+        const reloadData = await reloadRes.json();
+        const timeLeft = calculateRemaining(reloadData.end_time);
+  
+        setAuction({
+          id: reloadData.auction_id,
+          name: reloadData.title,
+          description: reloadData.description,
+          image: reloadData.image_url,
+          auctionType:
+            reloadData.auction_type === "FORWARD" ? "Forward" : "Dutch",
+          currentPrice: Number(reloadData.current_price),
+          highestBidder:
+            reloadData.bids && reloadData.bids.length
+              ? reloadData.bids[0].bidder_username
+              : "None",
+          endTime: reloadData.end_time,
+          shippingPrice: Number(reloadData.shipping_price || 10),
+          expeditedPrice: Number(reloadData.expedited_price || 15),
+          shippingDays: Number(reloadData.shipping_days || 5),
+          winnerId: reloadData.winner_id ?? null,
+        });
+  
+        setTimeDisplay(timeLeft.display);
+        setHasEnded(timeLeft.total <= 0 || reloadData.winner_id);
+      }
+    } catch (err) {
+      console.error("Decline error:", err);
+      alert("Failed to decline: " + err.message);
+    }
+  }
+
   if (!auction) return <p>Loading...</p>;
+
+  console.log(auction.auctionType, auction.auctionType === "Forward")
+  let isForwardWinner = false
+  let isActualWinner = false
+  if (auction.auctionType === "Forward"){
+      isForwardWinner = currentUser.username === auction.highestBidder || auction.highestBidder === "None";
+      isActualWinner = currentUser.username === auction.highestBidder
+  }
+ 
+
+  console.log(auction.highestBidder)
 
   return (
     <div className={styles.wrapper}>
       {!hasEnded ? (
         <>
           <h1>{auction.name}</h1>
-
+  
           <Image
             src={auction.image}
             width={500}
@@ -261,19 +389,17 @@ export default function ItemPage(props) {
             alt={auction.name}
             className={styles.image}
           />
-
+  
           <p className={styles.desc}>{auction.description}</p>
           <p className={styles.price}>Current Price: ${auction.currentPrice}</p>
-
+  
           {/* ====================== Forward Auction ====================== */}
           {auction.auctionType === "Forward" && (
             <>
               <p>Highest Bidder: {auction.highestBidder}</p>
-
-              <p className={styles.time}>
-                Time Left: {timeDisplay}
-              </p>
-
+  
+              <p className={styles.time}>Time Left: {timeDisplay}</p>
+  
               <input
                 type="number"
                 value={userBid}
@@ -281,20 +407,18 @@ export default function ItemPage(props) {
                 className={styles.input}
                 placeholder="Your Bid"
               />
-
+  
               <button className={styles.bidBtn} onClick={submitBid}>
                 BID
               </button>
             </>
           )}
-
+  
           {/* ====================== Dutch Auction ====================== */}
           {auction.auctionType === "Dutch" && (
             <>
-              <p className={styles.time}>
-                Time Left: {timeDisplay}
-              </p>
-
+              <p className={styles.time}>Time Left: {timeDisplay}</p>
+  
               <button className={styles.buyBtn} onClick={buyNow}>
                 BUY NOW
               </button>
@@ -303,27 +427,53 @@ export default function ItemPage(props) {
         </>
       ) : (
         // ======================================================
-        // auction ended to pay now
+        // auction ended – pay now section
         // ======================================================
         <div className={styles.endBox}>
           <h2>Auction Has Ended</h2>
-
+  
           <p>Final Price: ${auction.currentPrice}</p>
-
+  
           {auction.auctionType === "Forward" ? (
-            <p>Winner: {auction.highestBidder}</p>
+            <>
+              <p>Winner: {auction.highestBidder}</p>
+  
+              {isForwardWinner ? (
+                <>
+                  <button
+                    className={styles.payBtn}
+                    onClick={() => router.push(`/item/${auction.id}/pay`)}
+                  >
+                    Pay Now
+                  </button>
+  
+                  {/* Only show Decline if user is the actual winner */}
+                  {isActualWinner && (
+                    <button
+                      className={styles.payBtn}
+                      onClick={declinePurchase}
+                      style={{ marginLeft: "1rem" }}
+                    >
+                      Decline
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className={styles.notice}>You have lost this auction</p>
+              )}
+            </>
           ) : (
-            <p>You purchased this item</p>
+            <>
+              <p>You purchased this item</p>
+              <button
+                className={styles.payBtn}
+                onClick={() => router.push(`/item/${auction.id}/pay`)}
+              >
+                Pay Now
+              </button>
+            </>
           )}
-
-          <button
-            className={styles.payBtn}
-            onClick={() => router.push(`/item/${auction.id}/pay`)}
-          >
-            Pay Now
-          </button>
         </div>
       )}
     </div>
-  );
-}
+  )};

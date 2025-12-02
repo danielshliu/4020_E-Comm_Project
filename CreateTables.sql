@@ -1,3 +1,6 @@
+-- =========================================================
+-- DROP TABLES (in FK-safe order)
+-- =========================================================
 DROP TABLE IF EXISTS payments;
 DROP TABLE IF EXISTS dutch_accepts;
 DROP TABLE IF EXISTS bids;
@@ -7,6 +10,9 @@ DROP TABLE IF EXISTS auctions;
 DROP TABLE IF EXISTS items;
 DROP TABLE IF EXISTS users;
 
+-- =========================================================
+-- CREATE TABLES
+-- =========================================================
 
 CREATE TABLE users (
   user_id SERIAL PRIMARY KEY,
@@ -38,7 +44,7 @@ CREATE TABLE auctions (
   auction_type VARCHAR(10) CHECK (auction_type IN ('FORWARD', 'DUTCH')),
   start_price INT NOT NULL,
   current_price INT NOT NULL,
-  end_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMPTZ NOT NULL,
   shipping_price INT DEFAULT 10,
   expedited_price INT DEFAULT 15,
   shipping_days INT DEFAULT 5,
@@ -54,7 +60,8 @@ CREATE TABLE forward_auctions (
 CREATE TABLE dutch_auctions (
   auction_id INT PRIMARY KEY REFERENCES auctions(auction_id),
   price_drop_step INT NOT NULL,
-  step_interval_sec INT NOT NULL
+  step_interval_sec INT NOT NULL,
+  reserve_price INT NOT NULL
 );
 
 CREATE TABLE bids (
