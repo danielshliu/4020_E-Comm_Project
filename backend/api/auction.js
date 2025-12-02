@@ -4,18 +4,70 @@ import db from '../db.js';
 const router = express.Router();
 router.use(express.json());
 
+
+function computeDutchPrice(row) {
+    if (row.auction_type !== "DUTCH" || row.price_drop_step == null) {
+      return row;
+    }
+  
+    const start = new Date(row.created_at);
+    const end = new Date(row.end_time);
+    const now = new Date();
+  
+    // Use end time as the cap – price stops changing after end_time
+    const effectiveTime = now > end ? end : now;
+  
+    let elapsedMs = effectiveTime - start;
+  
+    // If we somehow haven't reached the start yet, use start price
+    if (elapsedMs <= 0) {
+      row.current_price = row.start_price;
+      return row;
+    }
+  
+    const stepMs = row.step_interval_sec * 1000;
+    const steps = Math.floor(elapsedMs / stepMs);
+  
+    let newPrice = row.start_price - steps * row.price_drop_step;
+  
+    // Never go below reserve_price
+    if (newPrice < row.reserve_price) {
+      newPrice = row.reserve_price;
+    }
+  
+    row.current_price = newPrice;
+    return row;
+  }
+
 // Get all active auction listings
 router.get('/', async (req, res) => {
     try {
         //query all the live active auction in listings
         const result = await db.query(`
-            SELECT a.*, i.title, i.description, i.image_url 
+            SELECT 
+              a.*,
+              i.title,
+              i.description,
+              i.image_url,
+              da.price_drop_step,
+              da.step_interval_sec,
+              da.reserve_price
             FROM auctions a
             JOIN items i ON a.item_id = i.item_id
+            LEFT JOIN dutch_auctions da ON da.auction_id = a.auction_id
             WHERE a.winner_id IS NULL
             ORDER BY a.end_time ASC
-        `);
+          `);
+
+        const rows = result.rows;
+        // Apply dynamic pricing for any dutch auctions
+        for (const row of rows) {
+            if (row.auction_type === "DUTCH" && row.price_drop_step) {
+            computeDutchPrice(row);
+            }
+        }
         res.json(result.rows);
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
@@ -31,30 +83,37 @@ router.get('/:auction_id', async (req, res) => {
         
         // Get auction details
         const result = await db.query(
-          `SELECT 
-            a.auction_id,
-            a.seller_id,
-            a.winner_id,
-            a.auction_type,
-            a.start_price,
-            a.current_price,
-            a.end_time,
-            a.shipping_price,
-            a.expedited_price,
-            a.shipping_days,
-            i.item_id,
-            i.title,
-            i.description,
-            i.image_url,
-            seller.username AS seller_username,
-            winner.username AS winner_username
-          FROM auctions a
-          JOIN items i ON a.item_id = i.item_id
-          JOIN users seller ON a.seller_id = seller.user_id
-          LEFT JOIN users winner ON a.winner_id = winner.user_id
-          WHERE a.auction_id = $1`,
-          [auction_id]
-        );
+            `
+            SELECT 
+              a.auction_id,
+              a.seller_id,
+              a.winner_id,
+              a.auction_type,
+              a.start_price,
+              a.current_price,
+              a.end_time,
+              a.shipping_price,
+              a.expedited_price,
+              a.shipping_days,
+              a.created_at,
+              i.item_id,
+              i.title,
+              i.description,
+              i.image_url,
+              seller.username AS seller_username,
+              winner.username AS winner_username,
+              da.price_drop_step,
+              da.step_interval_sec,
+              da.reserve_price
+            FROM auctions a
+            JOIN items i ON a.item_id = i.item_id
+            JOIN users seller ON a.seller_id = seller.user_id
+            LEFT JOIN users winner ON a.winner_id = winner.user_id
+            LEFT JOIN dutch_auctions da ON da.auction_id = a.auction_id
+            WHERE a.auction_id = $1
+            `,
+            [auction_id]
+          );
 
         if (result.rows.length === 0) {
           return res.status(404).json({ error: 'Auction not found' });
@@ -62,7 +121,14 @@ router.get('/:auction_id', async (req, res) => {
 
         const auction = result.rows[0];
 
+        if (auction.auction_type === "DUTCH" && auction.price_drop_step) {
+            computeDutchPrice(auction);
+          }
+          
+        console.log(auction.start_price, "TYPEEEEEEEEEE")
+
         // Get bids for forward auctions (ordered by amount DESC to get highest first)
+        
         if (auction.auction_type === 'FORWARD') {
           const bidsResult = await db.query(
             `SELECT 
@@ -483,7 +549,7 @@ router.post("/decline", async (req, res) => {
         console.error("Auction Decline Error:", err);
         res.status(500).json({ error: err.message });
       }
-    });
+});
     
   
 

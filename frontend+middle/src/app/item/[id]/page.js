@@ -83,6 +83,11 @@ export default function ItemPage(props) {
 
           // NEW: store winner_id from backend
           winnerId: data.winner_id ?? null,
+
+          // Extra info
+          startPrice: Number(data.start_price),
+          priceDropStep: data.price_drop_step ?? null,
+          stepIntervalSec: data.step_interval_sec ?? null,
         });
 
         setTimeDisplay(timeLeft.display);
@@ -197,7 +202,7 @@ export default function ItemPage(props) {
 
   async function declinePurchase() {
     if (!auction) return;
-  
+    
     if (!currentUser || !currentUser.user_id) {
       alert("You must be logged in.");
       router.push("/signin");
@@ -229,22 +234,26 @@ export default function ItemPage(props) {
         const timeLeft = calculateRemaining(reloadData.end_time);
   
         setAuction({
-          id: reloadData.auction_id,
-          name: reloadData.title,
-          description: reloadData.description,
-          image: reloadData.image_url,
-          auctionType:
-            reloadData.auction_type === "FORWARD" ? "Forward" : "Dutch",
-          currentPrice: Number(reloadData.current_price),
+          id: data.auction_id,
+          name: data.title,
+          description: data.description,
+          image: data.image_url,
+          auctionType: data.auction_type === "FORWARD" ? "Forward" : "Dutch",
+          currentPrice: Number(data.current_price),
           highestBidder:
-            reloadData.bids && reloadData.bids.length
-              ? reloadData.bids[0].bidder_username
+            data.bids && data.bids.length
+              ? data.bids[0].bidder_username
               : "None",
-          endTime: reloadData.end_time,
-          shippingPrice: Number(reloadData.shipping_price || 10),
-          expeditedPrice: Number(reloadData.expedited_price || 15),
-          shippingDays: Number(reloadData.shipping_days || 5),
-          winnerId: reloadData.winner_id ?? null,
+          endTime: data.end_time,
+          shippingPrice: Number(data.shipping_price || 10),
+          expeditedPrice: Number(data.expedited_price || 15),
+          shippingDays: Number(data.shipping_days || 5),
+          winnerId: data.winner_id ?? null,
+        
+          // Extra info
+          startPrice: Number(data.start_price),
+          priceDropStep: data.price_drop_step ?? null,
+          stepIntervalSec: data.step_interval_sec ?? null,
         });
   
         setTimeDisplay(timeLeft.display);
@@ -365,10 +374,10 @@ export default function ItemPage(props) {
 
   if (!auction) return <p>Loading...</p>;
 
-  console.log(auction.auctionType, auction.auctionType === "Forward")
+  console.log("WHAT", currentUser)
   let isForwardWinner = false
   let isActualWinner = false
-  if (auction.auctionType === "Forward"){
+  if (auction.auctionType === "Forward" && currentUser !== null){
       isForwardWinner = currentUser.username === auction.highestBidder || auction.highestBidder === "None";
       isActualWinner = currentUser.username === auction.highestBidder
   }
@@ -392,6 +401,32 @@ export default function ItemPage(props) {
   
           <p className={styles.desc}>{auction.description}</p>
           <p className={styles.price}>Current Price: ${auction.currentPrice}</p>
+
+          <div className={styles.statsBox}>
+            {auction.auctionType === "Forward" ? (
+              <>
+                <h3 className={styles.statsTitle}>Auction Details</h3>
+                <p>
+                  <strong>Starting Price:</strong> ${auction.startPrice}
+                </p>
+                <p>
+                  <strong>Time Left:</strong> {timeDisplay}
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className={styles.statsTitle}>Auction Details</h3>
+                <p>
+                  <strong>Original Price:</strong> ${auction.startPrice}
+                </p>
+                <p>
+                  <strong>Price Drop Rate:</strong>{" "}
+                  ${auction.priceDropStep} every {auction.stepIntervalSec} seconds
+                </p>
+              </>
+            )}
+          </div>
+
   
           {/* ====================== Forward Auction ====================== */}
           {auction.auctionType === "Forward" && (
@@ -464,7 +499,7 @@ export default function ItemPage(props) {
             </>
           ) : (
             <>
-              <p>You purchased this item</p>
+              <p>Would you like to purchase this item?</p>
               <button
                 className={styles.payBtn}
                 onClick={() => router.push(`/item/${auction.id}/pay`)}
